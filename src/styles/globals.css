@@ -85,6 +85,11 @@ body {
   overflow-x: hidden;
 }
 
+.selected {
+  /* Add your selected styles here */
+  border: 2px solid blue; /* For example, change the border color */
+}
+
 body {
   color: rgb(var(--foreground-rgb));
   background: linear-gradient(
@@ -103,5 +108,24 @@ a {
 @media (prefers-color-scheme: dark) {
   html {
     color-scheme: dark;
+  }
+
+}
+
+.visible {
+  animation: fadeIn 1s ease-in-out;
+  opacity: 1;
+}
+
+.hidden {
+  opacity: 0;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: o;
+  }
+  to {
+    opacity: 1;
   }
 }

@@ -7,7 +7,6 @@ import {
 } from "@solana/wallet-adapter-react";
 import { useMemo } from "react";
 import {
-  GlowWalletAdapter,
   PhantomWalletAdapter,
   SolflareWalletAdapter,
   MathWalletAdapter,
@@ -25,7 +24,6 @@ export default function App({ Component, pageProps }: AppProps) {
     () => [
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
-      new GlowWalletAdapter(),
       new MathWalletAdapter(),
     ],
     []
