@@ -1,38 +1,29 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# HeadlineHarmonies NFT Collection
+
+HeadlineHarmonies is a unique NFT collection that enables users to create and mint AI-generated artworks based on random headlines pulled from the Google News RSS Feed. Each artwork is a one-of-a-kind piece generated using advanced AI algorithms, resulting in a diverse and dynamic collection of digital art.
+
+## Features
+
+- AI-generated artworks based on random headlines.
+- Mint your own unique NFT artwork using our platform.
+- Earn a 50% commission on any piece minted with your referral code(Once you own a piece).
+- Engage with a vibrant community of art enthusiasts and collectors.
 
 ## Getting Started
 
-First, run the development server:
+To get started with HeadlineHarmonies, simply visit our website and create an account. From there, you can explore the collection, mint your own artworks, and start earning commissions through our referral program.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-```
+## Installation
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+HeadlineHarmonies is a web-based platform and does not require any installation. Simply access our website using your preferred web browser to get started.
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+## Usage
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+1. Connect your Phantom or Metaplex(Solana) wallet on HeadlineHarmonies.
+2. Explore the collection and discover AI-generated artworks.
+3. Mint your own artwork by selecting a random headline or using your own referral code.
+4. Share your referral code with others to earn commissions on their minted pieces.
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+## Contact
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+For any inquiries or support, please contact us at [tdevito@icloud.com](mailto:contact@headlineharmonies.com).
