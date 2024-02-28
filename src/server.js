@@ -22,19 +22,34 @@ app.get('/getPrice', async (req, res) => {
   try {
     let { salesLastSixHours, salesPreviousSixHours } = req.query;
     let price = calculateNFTPrice(parseInt(salesLastSixHours), parseInt(salesPreviousSixHours));
-    res.send(price);
+    
+    // Log the price
+    console.log("Current price:", price);
+    
+    res.status(200).send(price.toString()); // Send price as plain text
   } catch (error) {
     console.error('Error fetching price:', error);
     res.status(500).send('Internal Server Error');
   }
 });
 
+
 function calculateNFTPrice(salesLastSixHours, salesPreviousSixHours) {
-  let demandRatio = (1 + (0.1 * (salesLastSixHours - salesPreviousSixHours)));
+  // Validate input
+  if (typeof salesLastSixHours !== 'number' || typeof salesPreviousSixHours !== 'number' ||
+      isNaN(salesLastSixHours) || isNaN(salesPreviousSixHours)) {
+    throw new Error('Invalid input. Both salesLastSixHours and salesPreviousSixHours must be numbers.');
+  }
+
+  // Calculate demand ratio and current price
+  let demandRatio = 1 + (0.1 * (salesLastSixHours - salesPreviousSixHours));
   let minPrice = 1;
   let currentPrice = Math.max(minPrice, demandRatio);
-  return currentPrice;
-};
+
+  // Convert to float and return
+  return parseFloat(currentPrice.toFixed(2));
+}
+
 
 // app.get('/getHeadline', async (req, res) => {
 //   try {

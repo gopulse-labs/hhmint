@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { VStack, Stack, Button, Image, Text, Grid, GridItem, useMediaQuery, Container, Box } from "@chakra-ui/react";
+import { VStack, Stack, Button, Image, Text, Grid, GridItem,
+  Accordion, AccordionItem, AccordionButton,AccordionPanel,
+  AccordionIcon, useMediaQuery, Container, Box } from "@chakra-ui/react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
-import { GenericFile, TransactionBuilderItemsInput, Umi, generateSigner, percentAmount, sol, transactionBuilder } from '@metaplex-foundation/umi';
+import { GenericFile, TransactionBuilderItemsInput, Umi, 
+  generateSigner, percentAmount, sol, transactionBuilder } from '@metaplex-foundation/umi';
 import { createNft, fetchDigitalAsset, mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata';
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { bundlrUploader } from "@metaplex-foundation/umi-uploader-bundlr";
@@ -30,21 +33,40 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   const [loading, setLoading] = useState(false);
   const [realData1, setRealData] = useState<ArrayBuffer | null>(null);
   const [isGridVisible, setIsGridVisible] = useState(false);
+  const [price, setPrice] = useState<number | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
+
 
   const wallet = useWallet();
   umi.use(walletAdapterIdentity(wallet));
 
-  // getPrice(7, 5).then(currentPrice => {
-  //   console.log("current price: " + currentPrice);
-  // });
+  async function getPrice() {
+    try {
+      const response = await axios.get('http://localhost:3001/getPrice', {
+        params: {
+          salesLastSixHours: 20,
+          salesPreviousSixHours: 12
+        }
+      });
+      const price = parseFloat(response.data);
+      console.log(price)
+      setPrice(price);
+    } catch (error) {
+      console.error('Error fetching price:', error);
+    }
+  }
 
   useEffect(() => {
     // Access userPublicKey here
-    console.log('User Public Key:', userPublicKey);
+    if (userPublicKey) {
+      console.log('User Public Key:', userPublicKey);
+    }
+
+    getPrice();
 
     setIsGridVisible(true);
 
-    // Your existing useEffect code
+    
   }, [userPublicKey]);
 
   const gridButtonsData = [
@@ -71,7 +93,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     { label: 'Neoclassicism', imageUrl: '/images/neoclassicism.webp', id: 'neoclassism' },
     { label: 'Bauhaus', imageUrl: '/images/bauhaus.jpg', id: 'bauhaus' },
     { label: 'Minimalism', imageUrl: '/images/minimalism.webp', id: 'minimalism' },
-    { label: 'Baroque', imageUrl: '/images/minimalism.webp', id: 'baroque' }
+    { label: 'Baroque', imageUrl: '/images/baroque.jpg', id: 'baroque' }
   ];
 
   async function fetchHeadline() {  
@@ -92,14 +114,6 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     } catch (error) {
       console.error('Error fetching news:', error);
     }
-  }
-
-  async function getPrice(lastSix: number, previousSix: number) {
-    let response = await axios.get('/getPrice?salesLastSixHours=${lastSix}&salesPreviousSixHours=${previousSix}');
-    let data = response.data;
-    console.log(data);
-    // let price = data.price;
-    // return price;
   }
 
   function handleStyleClick(style: string, id: string) {
@@ -239,6 +253,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
 
   async function handleMint() {
     console.log("Start mint process...");
+    setIsOwner(true);
 
     if (realData1 !== null) {
 
@@ -274,10 +289,10 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
         uri: uri,
         sellerFeeBasisPoints: percentAmount(5.5),
       }))
-      // .add(transferSol(umi, { 
-      //   source: wallet, 
-      //   destination: umi.eddsa.generateKeypair().publicKey, 
-      //   amount: sol(0.1)}))
+      .add(transferSol(umi, { 
+        source: umi.identity, 
+        destination: umi.eddsa.generateKeypair().publicKey, 
+        amount: sol(0.3)}))
       .sendAndConfirm(umi)
       const asset = await fetchDigitalAsset(umi, mint.publicKey)
       console.log("New NFT data: " + asset)
@@ -287,6 +302,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   // async function mintNFT(file: GenericFile) {
 
   //   let [imageUri] = await umi.uploader.upload([file])
+    
   //   let uri = await umi.uploader.uploadJson({
   //     name: "name",
   //     description: "description",
@@ -295,30 +311,40 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
 
   //   const mint = generateSigner(umi)
     
-  //   transactionBuilder()
-  //     .add(createNft(umi, {
-  //       mint,
-  //       name: "Collection Name",
-  //       uri: uri,
-  //       sellerFeeBasisPoints: percentAmount(5.5),
-  //     }))
+    // transactionBuilder()
+    //   .add(createNft(umi, {
+    //     mint,
+    //     name: "Collection Name",
+    //     uri: uri,
+    //     sellerFeeBasisPoints: percentAmount(5.5),
+    //   }))
+  //     .add(transferSol(umi, { 
+  //       source: umi.identity, 
+  //       destination: umi.eddsa.generateKeypair().publicKey, 
+  //       amount: sol(0.3)}))
   //     .sendAndConfirm(umi)
   // }
 
   return !publicKey ? (
     
-    <Stack gap={4}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', maxWidth: '80%' }}>
-      
-      <Text> 
+    <Stack style={{
+      maxWidth: '80%', // Limit the maximum width to prevent running off the screen
+      wordWrap: 'break-word', // Allow long words to break and wrap onto the next line
+      textAlign: 'center', // Center the text horizontally
+      alignItems: 'center'
+    }} gap={4}>
+
+      <Text style={{
+          maxWidth: '80%', // Limit the maximum width to prevent running off the screen
+          wordWrap: 'break-word', // Allow long words to break and wrap onto the next line
+          textAlign: 'center', // Center the text horizontally
+        }}> 
       At the crossroads of art and technology comes a first of its kind NFT collection where you can own a uniqe 
-      visual rendering of unfolding history. Using your chosen headline and visual style, any current event can be transformed into an 
-      artistic masterpiece that echoes the pulse of contemporary life. The combination of artistic beauty and 
+      visual rendering of unfolding history. The combination of ethereal beauty and 
       the unfiltered hope and horror of our modern world come together with the power of generative AI to elevate a headline 
       into a piece of digital history.
       </Text>
       
-      </div>
       {wallets.filter((wallet) => wallet.readyState === "Installed").length >
       0 ? (
         
@@ -367,13 +393,56 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
       </Text>
 
       <Button onClick={disconnect}>Disconnect Wallet</Button>
-      
-      <Button onClick={fetchHeadline}>Grab a headline</Button>
-      {news && <Text>{news}</Text>}
-    
-      <Box padding="20px"> {/* Add padding here */}
+
+      <Text style={{
+          maxWidth: '80%', // Limit the maximum width to prevent running off the screen
+          wordWrap: 'break-word', // Allow long words to break and wrap onto the next line
+          textAlign: 'center', // Center the text horizontally
+        }}>
+      Using your chosen headline and visual style, any current event can be transformed into an 
+      artistic masterpiece that echoes the pulse of contemporary life.
+      </Text>
+
+      <Accordion style={{
+          width: "80%",
+          display: "flex",
+          flexDirection: "column",
+          alignContent: "center",
+          justifyContent: "center",
+          textAlign: "center"
+        }}>
+        <AccordionItem>
+          <h2>
+            <AccordionButton _expanded={{ bg: 'blue', color: 'white' }}>
+              <Box>
+              Headline
+              </Box>
+              {/* <AccordionIcon /> */}
+            </AccordionButton>
+          </h2>
+          <AccordionPanel pb={4}>
+          Toggle through today's headlines.
+          <br />
+          First come first serve!
+          <br />
+          <Button onClick={fetchHeadline}>Toggle headlines</Button>
+          {news && <Text>{news}</Text>}
+          </AccordionPanel>
+        </AccordionItem>
+
+        <AccordionItem>
+          <h2>
+            <AccordionButton _expanded={{ bg: 'blue', color: 'white' }}>
+              <Box>
+                Style
+              </Box>
+              {/* <AccordionIcon /> */}
+            </AccordionButton>
+          </h2>
+          <AccordionPanel pb={4}>
+          <Box padding="20px"> {/* Add padding here */}
       <Grid 
-         templateColumns={{ base: "repeat(2, 1fr)", md: "repeat(4, 1fr)", lg: "repeat(6, 1fr)"}} 
+         templateColumns={{ base: "repeat(1, 1fr)", sm: "repeat(2, 1fr)", md: "repeat(4, 1fr)", lg: "repeat(6, 1fr)"}} 
             gap={4}
             className={isGridVisible ? "visible" : "hidden"}>
         {gridButtonsData.map((button, index) => (
@@ -398,16 +467,52 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
         ))}
       </Grid>
       </Box>
-
-      <Button onClick={() => generateImage(selectedStyle)}>Create Image from Headline</Button>
-
-      <div>
+          </AccordionPanel>
+        </AccordionItem>
+      
+      
+      <AccordionItem>
+    <h2>
+      <AccordionButton _expanded={{ bg: 'blue', color: 'white' }}>
+        <Box>
+          Generate
+        </Box>
+        {/* <AccordionIcon /> */}
+      </AccordionButton>
+    </h2>
+    <AccordionPanel pb={4}>
+    <div>
+    <Button onClick={() => generateImage(selectedStyle)}>Create Image from Headline</Button>
       {loading && <p>Creating image, this will take a second...</p>}
       {imageSrc && <img src={imageSrc} alt="Generated Image" />}
     </div>
-      <Button onClick={handleMint}>Mint me!</Button>
+    </AccordionPanel>
+  </AccordionItem>
+
+  <AccordionItem>
+    <h2>
+      <AccordionButton _expanded={{ bg: 'blue', color: 'white' }}>
+        <Box>
+          Mint
+        </Box>
+        {/* <AccordionIcon /> */}
+      </AccordionButton>
+    </h2>
+    <AccordionPanel pb={4}>
+    <div>
+    <Text>{price !== null ? `${price} SOL` : 'Loading...'}</Text>
+    </div>
+      <Button onClick={handleMint}>Mint your HeadlineHarmonies NFT</Button>
+    </AccordionPanel>
+  </AccordionItem>
+  </Accordion>
+
+    
       
-        <Button onClick={generateSpecialLink}>Generate Referral Link</Button>
+      {isOwner && (
+    <Button onClick={generateSpecialLink}>Generate Referral Link</Button>
+)}
+
       
       <footer>Presented by GoPulse Labs</footer>
       <br />
