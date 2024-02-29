@@ -36,13 +36,12 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   const [price, setPrice] = useState<number | null>(null);
   const [isOwner, setIsOwner] = useState(false);
 
-
   const wallet = useWallet();
   umi.use(walletAdapterIdentity(wallet));
 
   async function getPrice() {
     try {
-      const response = await axios.get('http://localhost:3001/getPrice', {
+      const response = await axios.get('http://localhost:3000/api/getPrice', {
         params: {
           salesLastSixHours: 20,
           salesPreviousSixHours: 12
@@ -99,7 +98,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   async function fetchHeadline() {  
     
     try {
-      const response = await axios.get('http://localhost:3001/getNews');
+      const response = await axios.get('http://localhost:3000/api/getNews');
       const parsedNews = await parseString.parseStringPromise(response.data);
       const numberOfTitles = parsedNews.rss.channel[0].item.length;
       let random = getRandomNumber(numberOfTitles);
@@ -440,7 +439,8 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
             </AccordionButton>
           </h2>
           <AccordionPanel pb={4}>
-          <Box padding="20px"> {/* Add padding here */}
+          {news && <Text>{news}</Text>}
+          <Box padding="20px">
       <Grid 
          templateColumns={{ base: "repeat(1, 1fr)", sm: "repeat(2, 1fr)", md: "repeat(4, 1fr)", lg: "repeat(6, 1fr)"}} 
             gap={4}
@@ -482,9 +482,24 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     </h2>
     <AccordionPanel pb={4}>
     <div>
-    <Button onClick={() => generateImage(selectedStyle)}>Create Image from Headline</Button>
-      {loading && <p>Creating image, this will take a second...</p>}
-      {imageSrc && <img src={imageSrc} alt="Generated Image" />}
+    {news && <Text>{news}</Text>}
+    <Text>+</Text>
+    {selectedStyle && <Text>{selectedStyle}</Text>}
+    <br />
+    <Button onClick={() => generateImage(selectedStyle)}>Create Image</Button>
+    <br />
+    <Box>
+    {loading && <p>Creating image, this will take a second...</p>}
+    </Box>
+    <br />
+    <Box style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center", // Center vertically
+          textAlign: "center"
+        }}>
+    {imageSrc && <img src={imageSrc} alt="Generated Image" />}
+    </Box>
     </div>
     </AccordionPanel>
   </AccordionItem>
