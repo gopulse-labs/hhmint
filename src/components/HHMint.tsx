@@ -41,7 +41,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
 
   async function getPrice() {
     try {
-      const response = await axios.get('http://localhost:3000/api/getPrice', {
+      const response = await axios.get('https://headlineharmonies.netlify.app/.netlify/functions/getPrice', {
         params: {
           salesLastSixHours: 77,
           salesPreviousSixHours: 22
@@ -70,7 +70,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   async function fetchHeadline() {  
     
     try {
-      const response = await axios.get('http://localhost:3000/api/getNews');
+      const response = await axios.get('https://headlineharmonies.netlify.app/.netlify/functions/getNews');
       const parsedNews = await parseString.parseStringPromise(response.data);
       const numberOfTitles = parsedNews.rss.channel[0].item.length;
       let random = getRandomNumber(numberOfTitles);
