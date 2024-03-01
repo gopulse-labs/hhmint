@@ -1,4 +1,5 @@
-export default function handler(req: { query: { salesLastSixHours: any; salesPreviousSixHours: any; }; }, res: { status: (arg0: number) => { (): any; new(): any; send: { (arg0: string): void; new(): any; }; }; }) {
+export default function handler(req: { query: { salesLastSixHours: any; salesPreviousSixHours: any; }; }, 
+  res: { status: (arg0: number) => { (): any; new(): any; send: { (arg0: string): void; new(): any; }; }; }) {
     try {
       const { salesLastSixHours, salesPreviousSixHours } = req.query;
       const price = calculateNFTPrice(parseInt(salesLastSixHours), parseInt(salesPreviousSixHours));
@@ -27,4 +28,3 @@ export default function handler(req: { query: { salesLastSixHours: any; salesPre
     // Convert to float and return
     return parseFloat(currentPrice.toFixed(2));
   }
-  

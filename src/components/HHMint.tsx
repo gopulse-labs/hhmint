@@ -10,6 +10,7 @@ import { createNft, fetchDigitalAsset, mplTokenMetadata } from '@metaplex-founda
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { bundlrUploader } from "@metaplex-foundation/umi-uploader-bundlr";
 import { transferSol } from "@metaplex-foundation/mpl-toolbox";
+import { gridButtonsData } from './buttonData';
 import axios from 'axios';
 import parseString from 'xml2js';
 import 'text-encoding';
@@ -32,7 +33,6 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [realData1, setRealData] = useState<ArrayBuffer | null>(null);
-  const [isGridVisible, setIsGridVisible] = useState(false);
   const [price, setPrice] = useState<number | null>(null);
   const [isOwner, setIsOwner] = useState(false);
 
@@ -43,8 +43,8 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     try {
       const response = await axios.get('http://localhost:3000/api/getPrice', {
         params: {
-          salesLastSixHours: 20,
-          salesPreviousSixHours: 12
+          salesLastSixHours: 77,
+          salesPreviousSixHours: 22
         }
       });
       const price = parseFloat(response.data);
@@ -63,37 +63,9 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
 
     getPrice();
 
-    setIsGridVisible(true);
-
-    
   }, [userPublicKey]);
 
-  const gridButtonsData = [
-    { label: 'Impressionism', imageUrl: '/images/impressionism.jpg', id: 'impressionism' },
-    { label: 'Abstract Expressionism', imageUrl: '/images/abstract-expressionism.jpeg', id: 'abstract-expressionism' },
-    { label: 'Art Deco', imageUrl: '/images/art-deco.avif', id: 'art-deco' },
-    { label: 'Fauvism', imageUrl: '/images/fauvism.jpeg', id: 'fauvism' },
-    { label: 'Romanticism', imageUrl: '/images/romanticism.jpg', id: 'romanticism' },
-    { label: 'Futurism', imageUrl: '/images/futurism.jpg', id: 'futurism' },
-    { label: 'Rococo', imageUrl: '/images/rococo.jpg', id: 'rococo' },
-    { label: 'Classicism', imageUrl: '/images/classicism.jpg', id: 'classicism' },
-    { label: 'Cubism', imageUrl: '/images/cubism.jpg', id: 'cubism' },
-    { label: 'Pop art', imageUrl: '/images/pop-art.jpg', id: 'pop-art' },
-    { label: 'Realism', imageUrl: '/images/realism.jpg', id: 'realism' },
-    { label: 'Conceptual art', imageUrl: '/images/conceptual-art.jpg', id: 'conceptual-art' },
-    { label: 'Dadaism', imageUrl: '/images/dadaism.jpg', id: 'dadaism' },
-    { label: 'Abstract art', imageUrl: '/images/abstract-art.webp', id: 'abstract-art' },
-    { label: 'Contemporary art', imageUrl: '/images/contemporary-art.webp', id: 'contemporary-art' },
-    { label: 'Expressionism', imageUrl: '/images/expressionism.webp', id: 'expressionism' },
-    { label: 'Surrealsim', imageUrl: '/images/surrealism.jpg', id: 'surrealism' },
-    { label: 'Art Nouveau', imageUrl: '/images/art-nouveau.webp', id: 'art-nouveau' },
-    { label: 'Renaissance', imageUrl: '/images/renaissance.jpg', id: 'renaissance' },
-    { label: 'Constructivism', imageUrl: '/images/constructivism.JPG', id: 'constructivism' },
-    { label: 'Neoclassicism', imageUrl: '/images/neoclassicism.webp', id: 'neoclassism' },
-    { label: 'Bauhaus', imageUrl: '/images/bauhaus.jpg', id: 'bauhaus' },
-    { label: 'Minimalism', imageUrl: '/images/minimalism.webp', id: 'minimalism' },
-    { label: 'Baroque', imageUrl: '/images/baroque.jpg', id: 'baroque' }
-  ];
+
 
   async function fetchHeadline() {  
     
@@ -291,7 +263,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
       .add(transferSol(umi, { 
         source: umi.identity, 
         destination: umi.eddsa.generateKeypair().publicKey, 
-        amount: sol(0.3)}))
+        amount: sol(0.1)}))
       .sendAndConfirm(umi)
       const asset = await fetchDigitalAsset(umi, mint.publicKey)
       console.log("New NFT data: " + asset)
@@ -420,7 +392,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
             </AccordionButton>
           </h2>
           <AccordionPanel pb={4}>
-          Toggle through today's headlines.
+          Toggle through today&apos;s headlines.
           <br />
           First come first serve!
           <br />
@@ -443,8 +415,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
           <Box padding="20px">
       <Grid 
          templateColumns={{ base: "repeat(1, 1fr)", sm: "repeat(2, 1fr)", md: "repeat(4, 1fr)", lg: "repeat(6, 1fr)"}} 
-            gap={4}
-            className={isGridVisible ? "visible" : "hidden"}>
+            gap={4}>
         {gridButtonsData.map((button, index) => (
           <GridItem key={index}>
               <Button
