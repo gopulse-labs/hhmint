@@ -1,6 +1,6 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
+import { NextApiRequest, NextApiResponse } from 'next';
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default function handler(req: NextApiRequest, res: NextApiResponse<any>) {
   try {
     const { salesLastSixHours, salesPreviousSixHours } = req.query;
     const price = calculateNFTPrice(parseInt(salesLastSixHours as string), parseInt(salesPreviousSixHours as string));

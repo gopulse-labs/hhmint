@@ -1,7 +1,7 @@
-import axios from 'axios'; // You can use Axios directly in Next.js API routes
-import type { NextApiRequest, NextApiResponse } from 'next';
+import axios from 'axios'; 
+import { NextApiRequest, NextApiResponse } from 'next';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse<any>) {
   try {
     const response = await axios.get('https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en');
     res.status(200).json(response.data);
