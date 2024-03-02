@@ -11,10 +11,7 @@ export default function UserProfile() {
 
   return (
     <VStack gap={8} mt={16}>
-      <Heading style={{
-          fontFamily: "Engravers MT",
-        }}>HeadlineHarmonies</Heading>
-
+      <Heading>HeadlineHarmonies</Heading>
       <HHMint userPublicKey={userPublicKey as string} />
     </VStack>
   );

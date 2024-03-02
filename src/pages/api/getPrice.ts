@@ -8,7 +8,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse<any>) 
     // Log the price
     console.log("Current price:", price);
 
-    res.status(200).send(price.toString()); // Send price as plain text
+    res.send(price.toString()); // Send price as plain text
   } catch (error) {
     console.error('Error fetching price:', error);
     res.status(500).send('Internal Server Error');

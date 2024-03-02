@@ -469,7 +469,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
           alignItems: "center", // Center vertically
           textAlign: "center"
         }}>
-    {imageSrc && <img src={imageSrc} alt="Generated Image" />}
+    {imageSrc && <Image src={imageSrc} alt="Generated Image" />}
     </Box>
     </div>
     </AccordionPanel>

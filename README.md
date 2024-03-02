@@ -11,7 +11,7 @@ HeadlineHarmonies is a unique NFT collection that enables users to create and mi
 
 ## Getting Started
 
-To get started with HeadlineHarmonies, simply visit our website and create an account. From there, you can explore the collection, mint your own artworks, and start earning commissions through our referral program.
+To get started with HeadlineHarmonies, simply visit our [website](https://headlineharmonies.netlify.app/mint) and create an account. From there, you can explore the collection, mint your own artworks, and start earning commissions through our referral program.
 
 ## Installation
 
@@ -26,4 +26,4 @@ HeadlineHarmonies is a web-based platform and does not require any installation.
 
 ## Contact
 
-For any inquiries or support, please contact us at [tdevito@icloud.com](mailto:contact@headlineharmonies.com).
+For any inquiries or support, please contact me at [tdevito@icloud.com](mailto:contact@headlineharmonies.com).
