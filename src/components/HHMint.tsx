@@ -47,6 +47,12 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
           salesPreviousSixHours: 22
         }
       });
+      // const response = await axios.get('http://localhost:3000/api/getPrice', {
+      //   params: {
+      //     salesLastSixHours: 77,
+      //     salesPreviousSixHours: 22
+      //   }
+      // });
       const price = parseFloat(response.data);
       console.log(price)
       setPrice(price);
@@ -71,6 +77,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     
     try {
       const response = await axios.get('https://headlineharmonies.netlify.app/.netlify/functions/getNews');
+      //const response = await axios.get('http://localhost:3000/api/getNews');
       const parsedNews = await parseString.parseStringPromise(response.data);
       const numberOfTitles = parsedNews.rss.channel[0].item.length;
       let random = getRandomNumber(numberOfTitles);
@@ -456,9 +463,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     {news && <Text>{news}</Text>}
     <Text>+</Text>
     {selectedStyle && <Text>{selectedStyle}</Text>}
-    <br />
     <Button onClick={() => generateImage(selectedStyle)}>Create Image</Button>
-    <br />
     <Box>
     {loading && <p>Creating image, this will take a second...</p>}
     </Box>

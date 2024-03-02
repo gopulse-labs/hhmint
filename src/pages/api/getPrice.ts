@@ -6,11 +6,13 @@ export default function handler(req: NextApiRequest, res: NextApiResponse<any>) 
     const price = calculateNFTPrice(parseInt(salesLastSixHours as string), parseInt(salesPreviousSixHours as string));
 
     // Log the price
-    console.log("Current price:", price);
+    console.log("Current price: " + price);
+
+    console.log("Current price string: " + price.toString());
 
     res.send(price.toString()); // Send price as plain text
   } catch (error) {
-    console.error('Error fetching price:', error);
+    console.error('Error fetching price: ' + error);
     res.status(500).send('Internal Server Error');
   }
 }
