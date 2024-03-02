@@ -76,17 +76,18 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   async function fetchHeadline() {  
     
     try {
-      const response = await axios.get('https://headlineharmonies.netlify.app/.netlify/functions/getNews');
+      //const response = await axios.get('https://headlineharmonies.netlify.app/.netlify/functions/getNews');
       //const response = await axios.get('http://localhost:3000/api/getNews');
-      const parsedNews = await parseString.parseStringPromise(response.data);
-      const numberOfTitles = parsedNews.rss.channel[0].item.length;
-      let random = getRandomNumber(numberOfTitles);
-      console.log("Number of titles: ", numberOfTitles);
-      let titleElement = parsedNews.rss.channel[0].item[random].title;
-      let originalHeadline = titleElement.textContent || titleElement.toString();
-      console.log("original: " + originalHeadline, typeof originalHeadline)
-      let lastDashIndex = originalHeadline.lastIndexOf(' - ');
-      let modifiedHeadline = originalHeadline.substring(0, lastDashIndex);
+      // const parsedNews = await parseString.parseStringPromise(response.data);
+      // const numberOfTitles = parsedNews.rss.channel[0].item.length;
+      // let random = getRandomNumber(numberOfTitles);
+      // console.log("Number of titles: ", numberOfTitles);
+      // let titleElement = parsedNews.rss.channel[0].item[random].title;
+      // let originalHeadline = titleElement.textContent || titleElement.toString();
+      // console.log("original: " + originalHeadline, typeof originalHeadline)
+      // let lastDashIndex = originalHeadline.lastIndexOf(' - ');
+      // //let modifiedHeadline = originalHeadline.substring(0, lastDashIndex);
+      let modifiedHeadline = "US and Jordanian forces airdrop aid into Gaza";
       console.log("modified: " + modifiedHeadline)
       setNews(modifiedHeadline);
     } catch (error) {
