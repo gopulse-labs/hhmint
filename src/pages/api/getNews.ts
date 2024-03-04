@@ -1,8 +1,8 @@
 import axios from 'axios';
-import { NextApiRequest, NextApiResponse } from 'next';
+import { NextResponse } from 'next/server'
 import parseString from 'xml2js'; // Import the necessary module for XML parsing
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler() {
   try {
     const response = await axios.get('https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en');
     
@@ -13,10 +13,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let originalHeadline = titleElement.textContent || titleElement.toString();
     let lastDashIndex = originalHeadline.lastIndexOf(' - ');
     let modifiedHeadline = originalHeadline.substring(0, lastDashIndex);
-    res.json({headline: modifiedHeadline}); // Return the modified headline as a string
+    return NextResponse.json({headline: modifiedHeadline}, { status: 200 }); // Return the modified headline as a string
   } catch (error) {
     console.error('Error fetching news: ' + error);
-    res.json({error: 'Internal Server Error'});
+    
   }
 }
 
