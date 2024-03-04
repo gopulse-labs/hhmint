@@ -13,11 +13,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     let originalHeadline = titleElement.textContent || titleElement.toString();
     let lastDashIndex = originalHeadline.lastIndexOf(' - ');
     let modifiedHeadline = originalHeadline.substring(0, lastDashIndex);
-
-    res.status(200).send(modifiedHeadline); // Return the modified headline as a string
+    return Response.json({ name: 'John Doe' })
+    //res.json.toString(modifiedHeadline); // Return the modified headline as a string
   } catch (error) {
     console.error('Error fetching news: ' + error);
-    res.status(500).send('Internal Server Error');
+    res.send('Internal Server Error');
   }
 }
 
