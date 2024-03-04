@@ -15,7 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     res.send(modifiedHeadline); // Return the modified headline in the response
   } catch (error) {
     console.error('Error fetching news:', error);
-    res.status(500).send('Internal Server Error');
+    res.send('Internal Server Error');
   }
 }
 
