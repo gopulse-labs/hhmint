@@ -15,17 +15,26 @@ export async function handler(event: any, context: any) {
 
     return {
       statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
+      },
       body: JSON.stringify({ modifiedHeadline }), // Return the modified headline as JSON
     };
   } catch (error) {
     console.error('Error fetching news: ' + error);
     return {
       statusCode: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
+      },
       body: 'Internal Server Error',
     };
   }
 }
-
 
 function getRandomNumber(itemCount: number): number {
     return Math.floor(Math.random() * itemCount);

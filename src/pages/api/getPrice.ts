@@ -1,21 +1,26 @@
-import { NextApiRequest, NextApiResponse } from 'next';
-
-export default function handler(req: NextApiRequest, res: NextApiResponse<any>) {
+export async function handler(event: { queryStringParameters: { salesLastSixHours: any; salesPreviousSixHours: any; }; }, context: any) {
   try {
-    const { salesLastSixHours, salesPreviousSixHours } = req.query;
-    const price = calculateNFTPrice(parseInt(salesLastSixHours as string), parseInt(salesPreviousSixHours as string));
+    const { salesLastSixHours, salesPreviousSixHours } = event.queryStringParameters;
+    const price = calculateNFTPrice(parseInt(salesLastSixHours), parseInt(salesPreviousSixHours));
 
     // Log the price
     console.log("Current price: " + price);
 
     console.log("Current price string: " + price.toString());
 
-    res.send(price.toString()); // Send price as plain text
+    return {
+      statusCode: 200,
+      body: price.toString(), // Send price as plain text
+    };
   } catch (error) {
     console.error('Error fetching price: ' + error);
-    res.send('Internal Server Error');
+    return {
+      statusCode: 500,
+      body: 'Internal Server Error',
+    };
   }
 }
+
 
 function calculateNFTPrice(salesLastSixHours: number, salesPreviousSixHours: number) {
   // Validate input
