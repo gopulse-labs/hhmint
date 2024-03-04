@@ -13,7 +13,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let originalHeadline = titleElement.textContent || titleElement.toString();
     let lastDashIndex = originalHeadline.lastIndexOf(' - ');
     let modifiedHeadline = originalHeadline.substring(0, lastDashIndex);
-    res.send(modifiedHeadline); // Return the modified headline as a string
+    res.json({headline: modifiedHeadline}); // Return the modified headline as a string
   } catch (error) {
     console.error('Error fetching news: ' + error);
     res.send('Internal Server Error');
