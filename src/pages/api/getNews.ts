@@ -1,12 +1,25 @@
-import type { NextApiRequest, NextApiResponse } from 'next'
+import axios from 'axios';
+import { NextApiRequest, NextApiResponse } from 'next';
+import parseString from 'xml2js'; // Import the necessary module for XML parsing
 
-type Data = {
-  name: string
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    const response = await axios.get('https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en');
+    
+    const parsedNews = await parseString.parseStringPromise(response.data);
+    const numberOfTitles = parsedNews.rss.channel[0].item.length;
+    let random = getRandomNumber(numberOfTitles);
+    let titleElement = parsedNews.rss.channel[0].item[random].title;
+    let originalHeadline = titleElement.textContent || titleElement.toString();
+    let lastDashIndex = originalHeadline.lastIndexOf(' - ');
+    let modifiedHeadline = originalHeadline.substring(0, lastDashIndex);
+    res.json(modifiedHeadline);
+  } catch (error) {
+    console.error('Error fetching news: ' + error);
+    res.json('Internal Server Error');
+  }
 }
 
-export default function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<Data>
-) {
-  res.json({ name: 'John Doe' })
-}
+function getRandomNumber(itemCount: number): number {
+    return Math.floor(Math.random() * itemCount);
+  }
