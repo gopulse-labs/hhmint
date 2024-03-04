@@ -13,7 +13,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse<any>) 
     res.send(price.toString()); // Send price as plain text
   } catch (error) {
     console.error('Error fetching price: ' + error);
-    res.status(500).send('Internal Server Error');
+    res.send('Internal Server Error');
   }
 }
 

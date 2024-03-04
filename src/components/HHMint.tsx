@@ -5,7 +5,7 @@ import { VStack, Stack, Button, Image, Text, Grid, GridItem,
 import { useWallet } from "@solana/wallet-adapter-react";
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { GenericFile, TransactionBuilderItemsInput, Umi, 
-  generateSigner, percentAmount, sol, transactionBuilder } from '@metaplex-foundation/umi';
+  generateSigner, percentAmount, signerIdentity, sol, transactionBuilder } from '@metaplex-foundation/umi';
 import { createNft, fetchDigitalAsset, mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata';
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { bundlrUploader } from "@metaplex-foundation/umi-uploader-bundlr";
@@ -72,28 +72,15 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   }, [userPublicKey]);
 
 
-
   async function fetchHeadline() {  
-    
     try {
-      //const response = await axios.get('https://headlineharmonies.netlify.app/.netlify/functions/getNews');
-      //const response = await axios.get('http://localhost:3000/api/getNews');
-      // const parsedNews = await parseString.parseStringPromise(response.data);
-      // const numberOfTitles = parsedNews.rss.channel[0].item.length;
-      // let random = getRandomNumber(numberOfTitles);
-      // console.log("Number of titles: ", numberOfTitles);
-      // let titleElement = parsedNews.rss.channel[0].item[random].title;
-      // let originalHeadline = titleElement.textContent || titleElement.toString();
-      // console.log("original: " + originalHeadline, typeof originalHeadline)
-      // let lastDashIndex = originalHeadline.lastIndexOf(' - ');
-      // //let modifiedHeadline = originalHeadline.substring(0, lastDashIndex);
-      let modifiedHeadline = "US and Jordanian forces airdrop aid into Gaza";
-      console.log("modified: " + modifiedHeadline)
-      setNews(modifiedHeadline);
+      const response = await axios.get('https://headlineharmonies.netlify.app/.netlify/functions/getNews'); // Use relative URL to call the server-side API route
+      console.log("Response data: ", response.data);
+      setNews(response.data); // Assuming `setNews` is a state setter function
     } catch (error) {
       console.error('Error fetching news:', error);
     }
-  }
+}
 
   function handleStyleClick(style: string, id: string) {
     setSelectedStyle(style);
@@ -248,8 +235,13 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
 
       console.log(genericFile);
 
+      const uploadSigner = generateSigner(umi);
+
+      umi.use(signerIdentity(uploadSigner));
+
       let [imageUri] = await umi.uploader.upload([genericFile]);
       console.log("image: " + imageUri);
+
       let uri = await umi.uploader.uploadJson({
         name: selectedStyle + " - " + news,
         description: '"' + news + '"' + " in the style of " + selectedStyle,
@@ -258,12 +250,17 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
 
       console.log("uri: " + uri);
 
-      const mint = generateSigner(umi);
+      umi.use(walletAdapterIdentity(wallet));
+
+      const collectionMint = generateSigner(umi);
+      const collectionUpdateAuthority = generateSigner(umi);
       
       transactionBuilder()
 
       .add(createNft(umi, {
-        mint,
+        mint: collectionMint,
+        isCollection: true,
+        authority: collectionUpdateAuthority,
         name: 'HeadlineHarmonies',
         uri: uri,
         sellerFeeBasisPoints: percentAmount(5.5),
@@ -272,13 +269,20 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
         source: umi.identity, 
         destination: umi.eddsa.generateKeypair().publicKey, 
         amount: sol(0.1)}))
+        .add(transferSol(umi, { 
+          source: umi.identity, 
+          destination: umi.eddsa.generateKeypair().publicKey, 
+          amount: sol(0.1)}))
       .sendAndConfirm(umi)
-      const asset = await fetchDigitalAsset(umi, mint.publicKey)
-      console.log("New NFT data: " + asset)
+      // const asset = await fetchDigitalAsset(umi, mint.publicKey)
+      // console.log("New NFT data: " + asset)
     }
   }    
 
   // async function mintNFT(file: GenericFile) {
+
+  //     const uploadSigner = generateSigner(umi);
+  //     umi.use(signerIdentity(uploadSigner));
 
   //   let [imageUri] = await umi.uploader.upload([file])
     
@@ -288,15 +292,16 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   //     image: imageUri,
   //   })
 
+  // umi.use(walletAdapterIdentity(wallet));
   //   const mint = generateSigner(umi)
     
-    // transactionBuilder()
-    //   .add(createNft(umi, {
-    //     mint,
-    //     name: "Collection Name",
-    //     uri: uri,
-    //     sellerFeeBasisPoints: percentAmount(5.5),
-    //   }))
+  //   transactionBuilder()
+  //     .add(createNft(umi, {
+  //       mint,
+  //       name: "Collection Name",
+  //       uri: uri,
+  //       sellerFeeBasisPoints: percentAmount(5.5),
+  //     }))
   //     .add(transferSol(umi, { 
   //       source: umi.identity, 
   //       destination: umi.eddsa.generateKeypair().publicKey, 
