@@ -75,8 +75,8 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   async function fetchHeadline() {  
     try {
       const response = await axios.get('https://headlineharmonies.netlify.app/.netlify/functions/getNews'); // Use relative URL to call the server-side API route
-      console.log("Response data: ", response.data);
-      setNews(response.data); // Assuming `setNews` is a state setter function
+      console.log("Response data: ", response.data.modifiedHeadline);
+      setNews(response.data.modifiedHeadline); // Assuming `setNews` is a state setter function
     } catch (error) {
       console.error('Error fetching news:', error);
     }

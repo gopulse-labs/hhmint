@@ -4,7 +4,6 @@ import axios from 'axios';
 export async function handler(event: any, context: any) {
   try {
     const response = await axios.get('https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en');
-    
     const parsedNews = await parseString.parseStringPromise(response.data);
     const numberOfTitles = parsedNews.rss.channel[0].item.length;
     let random = getRandomNumber(numberOfTitles);
