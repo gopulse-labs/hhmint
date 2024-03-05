@@ -323,10 +323,10 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
           wordWrap: 'break-word', // Allow long words to break and wrap onto the next line
           textAlign: 'center', // Center the text horizontally
         }}> 
-      At the crossroads of art and technology comes a first of its kind NFT collection where you can own a uniqe 
-      visual rendering of unfolding history. The combination of ethereal beauty and 
-      the unfiltered hope and horror of our modern world come together with the power of generative AI to elevate a headline 
-      into a piece of digital history.
+      At the crossroads of art and technology lies a first-of-its-kind NFT collection where you can 
+      own a unique visual rendering of unfolding history. The combination of sublime imagery and the 
+      unfiltered hope and horror of our modern world converges with the power of generative AI to 
+      transform a headline into a piece of digital history.
       </Text>
       
       {wallets.filter((wallet) => wallet.readyState === "Installed").length >

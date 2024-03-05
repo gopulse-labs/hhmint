@@ -5,7 +5,6 @@ export async function handler(event: { queryStringParameters: { salesLastSixHour
 
     // Log the price
     console.log("Current price: " + price);
-
     console.log("Current price string: " + price.toString());
 
     return {
