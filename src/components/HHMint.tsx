@@ -235,9 +235,8 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
 
       console.log(genericFile);
 
-      const uploadSigner = generateSigner(umi);
-
-      umi.use(signerIdentity(uploadSigner));
+      // const uploadSigner = generateSigner(umi);
+      // umi.use(signerIdentity(uploadSigner));
 
       let [imageUri] = await umi.uploader.upload([genericFile]);
       console.log("image: " + imageUri);
@@ -250,7 +249,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
 
       console.log("uri: " + uri);
 
-      umi.use(walletAdapterIdentity(wallet));
+      // umi.use(walletAdapterIdentity(wallet));
 
       const collectionMint = generateSigner(umi);
       const collectionUpdateAuthority = generateSigner(umi);
