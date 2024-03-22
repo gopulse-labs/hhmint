@@ -1,7 +1,7 @@
 export const gridButtonsData = [
     { label: 'Impressionism', imageUrl: '/images/impressionism.jpg', id: 'impressionism' },
-    { label: 'Abstract Expressionism', imageUrl: '/images/abstract-expressionism.jpeg', id: 'abstract-expressionism' },
     { label: 'Art Deco', imageUrl: '/images/art-deco.avif', id: 'art-deco' },
+    { label: 'Abstract Expressionism', imageUrl: '/images/abstract-expressionism.jpeg', id: 'abstract-expressionism' },
     { label: 'Fauvism', imageUrl: '/images/fauvism.jpeg', id: 'fauvism' },
     { label: 'Romanticism', imageUrl: '/images/romanticism.jpg', id: 'romanticism' },
     { label: 'Futurism', imageUrl: '/images/futurism.jpg', id: 'futurism' },
@@ -12,8 +12,8 @@ export const gridButtonsData = [
     { label: 'Realism', imageUrl: '/images/realism.jpg', id: 'realism' },
     { label: 'Conceptual art', imageUrl: '/images/conceptual-art.jpg', id: 'conceptual-art' },
     { label: 'Dadaism', imageUrl: '/images/dadaism.jpg', id: 'dadaism' },
-    { label: 'Abstract art', imageUrl: '/images/abstract-art.webp', id: 'abstract-art' },
     { label: 'Contemporary art', imageUrl: '/images/contemporary-art.webp', id: 'contemporary-art' },
+    { label: 'Abstract art', imageUrl: '/images/abstract-art.webp', id: 'abstract-art' },
     { label: 'Expressionism', imageUrl: '/images/expressionism.webp', id: 'expressionism' },
     { label: 'Surrealsim', imageUrl: '/images/surrealism.jpg', id: 'surrealism' },
     { label: 'Art Nouveau', imageUrl: '/images/art-nouveau.webp', id: 'art-nouveau' },

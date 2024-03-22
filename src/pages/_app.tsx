@@ -17,6 +17,7 @@ const theme = extendTheme({
   config: {
     initialColorMode: "dark",
   },
+  
 });
 
 export default function App({ Component, pageProps }: AppProps) {

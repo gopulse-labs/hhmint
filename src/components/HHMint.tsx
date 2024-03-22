@@ -310,12 +310,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
 
   return !publicKey ? (
     
-    <Stack style={{
-      maxWidth: '80%', // Limit the maximum width to prevent running off the screen
-      wordWrap: 'break-word', // Allow long words to break and wrap onto the next line
-      textAlign: 'center', // Center the text horizontally
-      alignItems: 'center'
-    }} gap={4}>
+    <Stack gap={4} align="center">
 
       <Text style={{
           maxWidth: '80%', // Limit the maximum width to prevent running off the screen
@@ -339,6 +334,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
             <Button
               key={wallet.adapter.name}
               onClick={() => select(wallet.adapter.name)}
+              bgGradient="linear(to-r, blue.500, pink.500)"
               w="64"
               size="lg"
               fontSize="md"
@@ -375,7 +371,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
         {publicKey.toBase58()}
       </Text>
 
-      <Button onClick={disconnect}>Disconnect Wallet</Button>
+      <Button onClick={disconnect} bgGradient="linear(to-r, blue.500, pink.500)">Disconnect Wallet</Button>
 
       <Text style={{
           maxWidth: '80%', // Limit the maximum width to prevent running off the screen
@@ -386,7 +382,8 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
       artistic masterpiece that echoes the pulse of contemporary life.
       </Text>
 
-      <Accordion style={{
+      <Accordion allowToggle
+       style={{
           width: "80%",
           display: "flex",
           flexDirection: "column",
@@ -396,7 +393,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
         }}>
         <AccordionItem>
           <h2>
-            <AccordionButton _expanded={{ bg: 'blue', color: 'white' }}>
+            <AccordionButton _expanded={{ bgGradient: "linear(to-r, blue.500, pink.500)", color: 'white' }}>
               <Box>
               Headline
               </Box>
@@ -408,14 +405,14 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
           <br />
           First come first serve!
           <br />
-          <Button onClick={fetchHeadline}>Toggle headlines</Button>
+          <Button onClick={fetchHeadline} bgGradient="linear(to-r, blue.500, pink.500)">Toggle headlines</Button>
           {news && <Text>{news}</Text>}
           </AccordionPanel>
         </AccordionItem>
 
         <AccordionItem>
           <h2>
-            <AccordionButton _expanded={{ bg: 'blue', color: 'white' }}>
+            <AccordionButton _expanded={{ bgGradient: "linear(to-r, blue.500, pink.500)", color: 'white' }}>
               <Box>
                 Style
               </Box>
@@ -426,26 +423,37 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
           {news && <Text>{news}</Text>}
           <Box padding="20px">
       <Grid 
-         templateColumns={{ base: "repeat(1, 1fr)", sm: "repeat(2, 1fr)", md: "repeat(4, 1fr)", lg: "repeat(6, 1fr)"}} 
+         templateColumns={{ base: "repeat(1, 1fr)", sm: "repeat(2, 1fr)", md: "repeat(4, 1fr)"}} 
             gap={4}>
         {gridButtonsData.map((button, index) => (
           <GridItem key={index}>
               <Button
-                variant="outline"
-                size="md"
-                width="100%"
-                height="auto"
-                borderRadius="md"
-                onClick={() => handleStyleClick(button.label, button.id)}
-                style={
-                  selectedStyle === button.label
-                    ? { backgroundColor: 'blue', color: 'white', flexDirection: 'column', alignItems: 'center', display: 'flex' }
-                    : { flexDirection: 'column', alignItems: 'center', display: 'flex' }
-                }
-              >
-                <Image paddingTop="5px" src={button.imageUrl} alt={'Image ${index}'} boxSize="100px" />
-                <Text>{button.label}</Text>
-              </Button>
+  
+  size="md"
+  width="100%"
+  height="auto"
+  borderRadius="md"
+  onClick={() => handleStyleClick(button.label, button.id)}
+  style={
+    selectedStyle === button.label
+      ? {
+          backgroundImage: "linear-gradient(to right, #2563EB, #D636FF)",
+          color: "white",
+          flexDirection: "column",
+          alignItems: "center",
+          display: "flex",
+        }
+      : {
+          flexDirection: "column",
+          alignItems: "center",
+          display: "flex",
+        }
+  }
+>
+  <Image paddingTop="5px" src={button.imageUrl} alt={`Image ${index}`} boxSize="100px" />
+  <Text>{button.label}</Text>
+</Button>
+
           </GridItem>
         ))}
       </Grid>
@@ -456,7 +464,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
       
       <AccordionItem>
     <h2>
-      <AccordionButton _expanded={{ bg: 'blue', color: 'white' }}>
+      <AccordionButton _expanded={{ bgGradient: "linear(to-r, blue.500, pink.500)", color: 'white' }}>
         <Box>
           Generate
         </Box>
@@ -468,7 +476,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     {news && <Text>{news}</Text>}
     <Text>+</Text>
     {selectedStyle && <Text>{selectedStyle}</Text>}
-    <Button onClick={() => generateImage(selectedStyle)}>Create Image</Button>
+    <Button onClick={() => generateImage(selectedStyle)} bgGradient="linear(to-r, blue.500, pink.500)">Generate Image</Button>
     <Box>
     {loading && <p>Creating image, this will take a second...</p>}
     </Box>
@@ -487,7 +495,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
 
   <AccordionItem>
     <h2>
-      <AccordionButton _expanded={{ bg: 'blue', color: 'white' }}>
+      <AccordionButton _expanded={{ bgGradient: "linear(to-r, blue.500, pink.500)", color: 'white' }}>
         <Box>
           Mint
         </Box>
@@ -498,7 +506,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     <div>
     <Text>{price !== null ? `${price} SOL` : 'Loading...'}</Text>
     </div>
-      <Button onClick={handleMint}>Mint your HeadlineHarmonies NFT</Button>
+      <Button onClick={handleMint} bgGradient="linear(to-r, blue.500, pink.500)">Mint your HeadlineHarmonies NFT</Button>
     </AccordionPanel>
   </AccordionItem>
   </Accordion>
@@ -506,7 +514,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     
       
       {isOwner && (
-    <Button onClick={generateSpecialLink}>Generate Referral Link</Button>
+    <Button onClick={generateSpecialLink} bgGradient="linear(to-r, blue.500, pink.500)">Generate Referral Link</Button>
 )}
 
       
