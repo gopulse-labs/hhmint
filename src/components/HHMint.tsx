@@ -473,7 +473,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     </h2>
     <AccordionPanel pb={4}>
     <div>
-    {[news, selectedStyle] && <Text>"{news}" in the {selectedStyle} style.</Text>}
+    {[news, selectedStyle] && <Text>&quot;{news}&quot; in the {selectedStyle} style.</Text>}
     <Button onClick={() => generateImage(selectedStyle)} bgGradient="linear(to-r, blue.500, pink.500)">Generate Image</Button>
     <Box>
     {loading && <p>Creating image, this will take a second...</p>}
