@@ -243,7 +243,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
 
       let uri = await umi.uploader.uploadJson({
         name: selectedStyle + " - " + news,
-        description: '"' + news + '"' + " in the style of " + selectedStyle,
+        description: '"' + news + '"' + " in the " + selectedStyle + " style.",
         image: imageUri,
       });
 
@@ -252,14 +252,14 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
       // umi.use(walletAdapterIdentity(wallet));
 
       const collectionMint = generateSigner(umi);
-      const collectionUpdateAuthority = generateSigner(umi);
+      //const collectionUpdateAuthority = generateSigner(umi);
       
       transactionBuilder()
 
       .add(createNft(umi, {
         mint: collectionMint,
         isCollection: true,
-        authority: collectionUpdateAuthority,
+        //authority: collectionUpdateAuthority,
         name: 'HeadlineHarmonies',
         uri: uri,
         sellerFeeBasisPoints: percentAmount(5.5),
@@ -272,9 +272,9 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
           source: umi.identity, 
           destination: umi.eddsa.generateKeypair().publicKey, 
           amount: sol(0.1)}))
-      .sendAndConfirm(umi)
-      // const asset = await fetchDigitalAsset(umi, mint.publicKey)
-      // console.log("New NFT data: " + asset)
+      .sendAndConfirm(umi);
+      const asset = await fetchDigitalAsset(umi, collectionMint.publicKey)
+      console.log("New NFT data: " + asset)
     }
   }    
 
@@ -473,9 +473,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     </h2>
     <AccordionPanel pb={4}>
     <div>
-    {news && <Text>{news}</Text>}
-    <Text>+</Text>
-    {selectedStyle && <Text>{selectedStyle}</Text>}
+    {[news, selectedStyle] && <Text>"{news}" in the {selectedStyle} style.</Text>}
     <Button onClick={() => generateImage(selectedStyle)} bgGradient="linear(to-r, blue.500, pink.500)">Generate Image</Button>
     <Box>
     {loading && <p>Creating image, this will take a second...</p>}
