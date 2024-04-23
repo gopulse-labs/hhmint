@@ -76,17 +76,14 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
 
   async function fetchHeadline() {  
     try {
-      // const response = await axios.get('https://headlineharmonies.netlify.app/.netlify/functions/getNews'); // Use relative URL to call the server-side API route
-      // console.log("Response data: ", response.data.modifiedHeadline);
-      // const headlines = response.data.modifiedHeadline || [];
-      // setNews(headlines);
-      const message = "Use relative URL to call the server-side API route";
-const repeatedMessages = Array(38).fill(message);
-      setNews(repeatedMessages);
+        const response = await axios.get('https://headlineharmonies.netlify.app/.netlify/functions/getNews'); // Use relative URL to call the server-side API route
+        const headlines = response.data.headlines || [];
+        setNews(headlines);
     } catch (error) {
-      console.error('Error fetching news:', error);
+        console.error('Error fetching news:', error);
     }
 }
+
 
   function handleStyleClick(style: string, id: string) {
     setSelectedStyle(style);
@@ -101,16 +98,17 @@ const repeatedMessages = Array(38).fill(message);
       document.getElementById(id)?.classList.add('selected');
   }
 
-            function handleHeadlineClick(headline: string, index: number) {
-  setSelectedHeadline(headline);
+  function handleHeadlineClick(headline: string, index: number) {
+    setSelectedHeadline(headline);
 
-  // Remove the selected class from all buttons except the clicked one
-  document.querySelectorAll('.headline-button').forEach((button) => {
-    button.classList.remove('selected');
-  });
+    // Remove the selected class from all buttons except the clicked one
+    document.querySelectorAll('.headline-button').forEach((button) => {
+      button.classList.remove('selected');
+    });
 
-  // Add the selected class to the clicked button
-  document.getElementById(`headline-button-${index}`)?.classList.add('selected');
+    // Add the selected class to the clicked button
+    document.getElementById(`headline-button-${index}`)?.classList.add('selected');
+
 }
 
   useEffect(() => {
@@ -118,16 +116,16 @@ const repeatedMessages = Array(38).fill(message);
   }, [selectedStyle]);
 
   const prompts = [
-    "Craft a masterpiece, channeling the aesthetic essence of " + selectedStyle + ", to convey the message behind the headline: " + '"' + news + '"',
-    "Design an exquisite piece, drawing inspiration from the visual language of " + selectedStyle + ", to interpret the narrative within the headline: " + '"' + news + '"',
-    "Produce an artistic marvel, embracing the stylistic elements of " + selectedStyle + ", to articulate the story encapsulated in the headline: " + '"' + news + '"',
-    "Create a visual symphony, echoing the design ethos of " + selectedStyle + ", to mirror the essence of the headline: " + '"' + news + '"',
-    "Fashion a captivating artwork, embodying the visual characteristics of " + selectedStyle + ", to depict the essence of the headline: " + '"' + news + '"',
-    "Construct a striking composition, influenced by the aesthetic principles of " + selectedStyle + ", to illuminate the essence of the headline: " + '"' + news + '"',
-    "Shape an evocative piece, drawing from the visual motifs of " + selectedStyle + ", to encapsulate the essence of the headline: " + '"' + news + '"',
-    "Devise a stunning creation, inspired by the visual aesthetics of " + selectedStyle + ", to reflect the narrative conveyed in the headline: " + '"' + news + '"',
-    "Forge an artistic interpretation, mirroring the visual cues of " + selectedStyle + ", to convey the underlying message of the headline: " + '"' + news + '"',
-    "Sculpt an expressive artwork, embodying the stylistic nuances of " + selectedStyle + ", to capture the essence of the headline: " + '"' + news + '"'
+    "Craft a masterpiece, channeling the aesthetic essence of " + selectedStyle + ", to convey the message behind the headline: " + '"' + selectedHeadline + '"',
+    "Design an exquisite piece, drawing inspiration from the visual language of " + selectedStyle + ", to interpret the narrative within the headline: " + '"' + selectedHeadline + '"',
+    "Produce an artistic marvel, embracing the stylistic elements of " + selectedStyle + ", to articulate the story encapsulated in the headline: " + '"' + selectedHeadline + '"',
+    "Create a visual symphony, echoing the design ethos of " + selectedStyle + ", to mirror the essence of the headline: " + '"' + selectedHeadline + '"',
+    "Fashion a captivating artwork, embodying the visual characteristics of " + selectedStyle + ", to depict the essence of the headline: " + '"' + selectedHeadline + '"',
+    "Construct a striking composition, influenced by the aesthetic principles of " + selectedStyle + ", to illuminate the essence of the headline: " + '"' + selectedHeadline + '"',
+    "Shape an evocative piece, drawing from the visual motifs of " + selectedStyle + ", to encapsulate the essence of the headline: " + '"' + selectedHeadline + '"',
+    "Devise a stunning creation, inspired by the visual aesthetics of " + selectedStyle + ", to reflect the narrative conveyed in the headline: " + '"' + selectedHeadline + '"',
+    "Forge an artistic interpretation, mirroring the visual cues of " + selectedStyle + ", to convey the underlying message of the headline: " + '"' + selectedHeadline + '"',
+    "Sculpt an expressive artwork, embodying the stylistic nuances of " + selectedStyle + ", to capture the essence of the headline: " + '"' + selectedHeadline + '"'
   ];
 
   async function generateImage(selectedStyle: string | null) {
@@ -411,7 +409,7 @@ const repeatedMessages = Array(38).fill(message);
 
 
 <AccordionPanel pb={4}>
-  {news && (
+{selectedHeadline && <Text>{selectedHeadline}</Text>}  
     <Grid
       templateColumns={{ base: 'repeat(1, 1fr)', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }}
       gap={4}
@@ -420,7 +418,7 @@ const repeatedMessages = Array(38).fill(message);
         <GridItem key={index}>
           <Button
             size="md"
-            width="100%"
+            width="auto"
             height="auto"
             borderRadius="md"
             onClick={() => handleHeadlineClick(headline, index)}
@@ -441,13 +439,19 @@ const repeatedMessages = Array(38).fill(message);
             }
             className="headline-button"
             id={`headline-button-${index}`}
+            px={4}
+            py={2}
           >
-            <Text>{headline}</Text>
+            <Text
+              // Allow text to wrap to multiple lines
+  style={{ whiteSpace: 'normal', wordWrap: 'break-word' }}
+  textAlign="center"
+            >{headline}</Text>
           </Button>
         </GridItem>
       ))}
     </Grid>
-  )}
+  
 </AccordionPanel>
 
         </AccordionItem>
@@ -462,7 +466,7 @@ const repeatedMessages = Array(38).fill(message);
             </AccordionButton>
           </h2>
           <AccordionPanel pb={4}>
-          {news && <Text>{news[0]}</Text>}
+          {selectedHeadline && <Text>{selectedHeadline}</Text>}
           <Box padding="20px">
       <Grid 
          templateColumns={{ base: "repeat(1, 1fr)", sm: "repeat(2, 1fr)", md: "repeat(4, 1fr)"}} 
@@ -514,7 +518,7 @@ const repeatedMessages = Array(38).fill(message);
     </h2>
     <AccordionPanel pb={4}>
     <div>
-    {[news, selectedStyle] && <Text>Interpretation of &quot;{news[0]}&quot; inspired by the {selectedStyle} style.</Text>}
+    {[selectedHeadline, selectedStyle] && <Text>Interpretation of &quot;{selectedHeadline}&quot; inspired by the {selectedStyle} style.</Text>}
     <Button onClick={() => generateImage(selectedStyle)} bgGradient="linear(to-r, #9945FF, #14F195)">Generate Image</Button>
     <Box>
     {loading && <p>Creating image, this will take a second...</p>}
@@ -542,7 +546,7 @@ const repeatedMessages = Array(38).fill(message);
       </AccordionButton>
     </h2>
     <AccordionPanel pb={4}>
-    {[news, selectedStyle] && <Text>Interpretation of &quot;{news[0]}&quot; inspired by the {selectedStyle} style.</Text>}
+    {[selectedHeadline, selectedStyle] && <Text>Interpretation of &quot;{selectedHeadline}&quot; inspired by the {selectedStyle} style.</Text>}
     <Box style={{
           display: "flex",
           justifyContent: "center",
