@@ -11,7 +11,7 @@ export default function UserPage() {
 
   return (
     <VStack gap={8} mt={16}>
-      <Heading bgGradient='linear(to-r, blue.500, pink.500)'
+      <Heading bgGradient='linear(to-r, #9945FF, #14F195)'
   bgClip='text'>HeadlineHarmonies</Heading>
 
       <HHMint userPublicKey={userPublicKey as string} />

@@ -4,23 +4,25 @@ import axios from 'axios';
 export async function handler(event: any, context: any) {
   try {
     const response = await axios.get('https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en');
-    const parsedNews = await parseString.parseStringPromise(response.data);
-    const numberOfTitles = parsedNews.rss.channel[0].item.length;
-    let random = getRandomNumber(numberOfTitles);
-    let titleElement = parsedNews.rss.channel[0].item[random].title;
+const parsedNews = await parseString.parseStringPromise(response.data);
+const headlines = parsedNews.rss.channel[0].item.map((item: { title: any; }) => {
+    let titleElement = item.title;
     let originalHeadline = titleElement.textContent || titleElement.toString();
     let lastDashIndex = originalHeadline.lastIndexOf(' - ');
-    let modifiedHeadline = originalHeadline.substring(0, lastDashIndex);
+    return lastDashIndex !== -1 ? originalHeadline.substring(0, lastDashIndex) : originalHeadline;
+});
 
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
-      },
-      body: JSON.stringify({ modifiedHeadline }), // Return the modified headline as JSON
-    };
+
+return {
+  statusCode: 200,
+  headers: {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
+  },
+  body: JSON.stringify({ headlines }), // Return the array of headlines as JSON
+};
+
   } catch (error) {
     console.error('Error fetching news: ' + error);
     return {

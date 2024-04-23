@@ -6,7 +6,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { GenericFile, TransactionBuilderItemsInput, Umi, 
   generateSigner, percentAmount, signerIdentity, sol, transactionBuilder } from '@metaplex-foundation/umi';
-import { createNft, fetchDigitalAsset, mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata';
+import { createNft, fetchAllDigitalAssetByVerifiedCollection, fetchDigitalAsset, mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata';
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { bundlrUploader } from "@metaplex-foundation/umi-uploader-bundlr";
 import { transferSol } from "@metaplex-foundation/mpl-toolbox";
@@ -28,8 +28,9 @@ let currentPromptIndex = 0;
 const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   const { select, wallets, publicKey, disconnect } = useWallet();
 
-  const [news, setNews] = useState<string | null>(null);
+  const [news, setNews] = useState<string[]>([]);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [selectedHeadline, setSelectedHeadline] = useState<string | null>(null);
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [realData1, setRealData] = useState<ArrayBuffer | null>(null);
@@ -67,6 +68,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
       console.log('User Public Key:', userPublicKey);
     }
 
+    fetchHeadline();
     getPrice();
 
   }, [userPublicKey]);
@@ -74,9 +76,13 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
 
   async function fetchHeadline() {  
     try {
-      const response = await axios.get('https://headlineharmonies.netlify.app/.netlify/functions/getNews'); // Use relative URL to call the server-side API route
-      console.log("Response data: ", response.data.modifiedHeadline);
-      setNews(response.data.modifiedHeadline); // Assuming `setNews` is a state setter function
+      // const response = await axios.get('https://headlineharmonies.netlify.app/.netlify/functions/getNews'); // Use relative URL to call the server-side API route
+      // console.log("Response data: ", response.data.modifiedHeadline);
+      // const headlines = response.data.modifiedHeadline || [];
+      // setNews(headlines);
+      const message = "Use relative URL to call the server-side API route";
+const repeatedMessages = Array(38).fill(message);
+      setNews(repeatedMessages);
     } catch (error) {
       console.error('Error fetching news:', error);
     }
@@ -94,6 +100,18 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
       // Add the selected class to the clicked button
       document.getElementById(id)?.classList.add('selected');
   }
+
+            function handleHeadlineClick(headline: string, index: number) {
+  setSelectedHeadline(headline);
+
+  // Remove the selected class from all buttons except the clicked one
+  document.querySelectorAll('.headline-button').forEach((button) => {
+    button.classList.remove('selected');
+  });
+
+  // Add the selected class to the clicked button
+  document.getElementById(`headline-button-${index}`)?.classList.add('selected');
+}
 
   useEffect(() => {
     console.log(selectedStyle);
@@ -160,10 +178,6 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     } catch (error) {
       console.error('Error fetching data:', error);
     }
-  }
-  
-  function getRandomNumber(itemCount: number): number {
-    return Math.floor(Math.random() * itemCount);
   }
 
   function generateSpecialLink() {
@@ -242,27 +256,22 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
       console.log("image: " + imageUri);
 
       let uri = await umi.uploader.uploadJson({
-        name: selectedStyle + " - " + news,
+        name: news,
         description: '"' + news + '"' + " in the " + selectedStyle + " style.",
         image: imageUri,
       });
 
       console.log("uri: " + uri);
 
-      // umi.use(walletAdapterIdentity(wallet));
-
-      const collectionMint = generateSigner(umi);
-      //const collectionUpdateAuthority = generateSigner(umi);
+      const mint = generateSigner(umi);
       
       transactionBuilder()
 
       .add(createNft(umi, {
-        mint: collectionMint,
-        isCollection: true,
-        //authority: collectionUpdateAuthority,
+        mint,
         name: 'HeadlineHarmonies',
         uri: uri,
-        sellerFeeBasisPoints: percentAmount(5.5),
+        sellerFeeBasisPoints: percentAmount(4),
       }))
       .add(transferSol(umi, { 
         source: umi.identity, 
@@ -273,7 +282,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
           destination: umi.eddsa.generateKeypair().publicKey, 
           amount: sol(0.1)}))
       .sendAndConfirm(umi);
-      const asset = await fetchDigitalAsset(umi, collectionMint.publicKey)
+      const asset = await fetchDigitalAsset(umi, mint.publicKey)
       console.log("New NFT data: " + asset)
     }
   }    
@@ -334,7 +343,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
             <Button
               key={wallet.adapter.name}
               onClick={() => select(wallet.adapter.name)}
-              bgGradient="linear(to-r, blue.500, pink.500)"
+              bgGradient="linear(to-r, #9945FF, #14F195)"
               w="64"
               size="lg"
               fontSize="md"
@@ -371,7 +380,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
         {publicKey.toBase58()}
       </Text>
 
-      <Button onClick={disconnect} bgGradient="linear(to-r, blue.500, pink.500)">Disconnect Wallet</Button>
+      <Button onClick={disconnect} bgGradient="linear(to-r, #9945FF, #14F195)">Disconnect Wallet</Button>
 
       <Text style={{
           maxWidth: '80%', // Limit the maximum width to prevent running off the screen
@@ -393,26 +402,59 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
         }}>
         <AccordionItem>
           <h2>
-            <AccordionButton _expanded={{ bgGradient: "linear(to-r, blue.500, pink.500)", color: 'white' }}>
+            <AccordionButton _expanded={{ bgGradient: "linear(to-r, #9945FF, #14F195)", color: 'white' }}>
               <Box>
-              Headline
+                Headline
               </Box>
-              {/* <AccordionIcon /> */}
             </AccordionButton>
           </h2>
-          <AccordionPanel pb={4}>
-          Toggle through today&apos;s headlines.
-          <br />
-          First come first serve!
-          <br />
-          <Button onClick={fetchHeadline} bgGradient="linear(to-r, blue.500, pink.500)">Toggle headlines</Button>
-          {news && <Text>{news}</Text>}
-          </AccordionPanel>
+
+
+<AccordionPanel pb={4}>
+  {news && (
+    <Grid
+      templateColumns={{ base: 'repeat(1, 1fr)', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }}
+      gap={4}
+    >
+      {news.map((headline, index) => (
+        <GridItem key={index}>
+          <Button
+            size="md"
+            width="100%"
+            height="auto"
+            borderRadius="md"
+            onClick={() => handleHeadlineClick(headline, index)}
+            style={
+              selectedHeadline === headline
+                ? {
+                    backgroundImage: 'linear-gradient(to right, #9945FF, #14F195)',
+                    color: 'white',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    display: 'flex',
+                  }
+                : {
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    display: 'flex',
+                  }
+            }
+            className="headline-button"
+            id={`headline-button-${index}`}
+          >
+            <Text>{headline}</Text>
+          </Button>
+        </GridItem>
+      ))}
+    </Grid>
+  )}
+</AccordionPanel>
+
         </AccordionItem>
 
         <AccordionItem>
           <h2>
-            <AccordionButton _expanded={{ bgGradient: "linear(to-r, blue.500, pink.500)", color: 'white' }}>
+            <AccordionButton _expanded={{ bgGradient: "linear(to-r, #9945FF, #14F195)", color: 'white' }}>
               <Box>
                 Style
               </Box>
@@ -420,7 +462,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
             </AccordionButton>
           </h2>
           <AccordionPanel pb={4}>
-          {news && <Text>{news}</Text>}
+          {news && <Text>{news[0]}</Text>}
           <Box padding="20px">
       <Grid 
          templateColumns={{ base: "repeat(1, 1fr)", sm: "repeat(2, 1fr)", md: "repeat(4, 1fr)"}} 
@@ -428,31 +470,30 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
         {gridButtonsData.map((button, index) => (
           <GridItem key={index}>
               <Button
-  
-  size="md"
-  width="100%"
-  height="auto"
-  borderRadius="md"
-  onClick={() => handleStyleClick(button.label, button.id)}
-  style={
-    selectedStyle === button.label
-      ? {
-          backgroundImage: "linear-gradient(to right, #2563EB, #D636FF)",
-          color: "white",
-          flexDirection: "column",
-          alignItems: "center",
-          display: "flex",
-        }
-      : {
-          flexDirection: "column",
-          alignItems: "center",
-          display: "flex",
-        }
-  }
->
-  <Image paddingTop="5px" src={button.imageUrl} alt={`Image ${index}`} boxSize="100px" />
-  <Text>{button.label}</Text>
-</Button>
+                size="md"
+                width="100%"
+                height="auto"
+                borderRadius="md"
+                onClick={() => handleStyleClick(button.label, button.id)}
+                style={
+                  selectedStyle === button.label
+                    ? {
+                        backgroundImage: "linear-gradient(to right, #9945FF, #14F195)",
+                        color: "white",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        display: "flex",
+                      }
+                    : {
+                        flexDirection: "column",
+                        alignItems: "center",
+                        display: "flex",
+                      }
+                }
+              >
+              <Image paddingTop="5px" src={button.imageUrl} alt={`Image ${index}`} boxSize="100px" />
+              <Text>{button.label}</Text>
+            </Button>
 
           </GridItem>
         ))}
@@ -464,7 +505,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
       
       <AccordionItem>
     <h2>
-      <AccordionButton _expanded={{ bgGradient: "linear(to-r, blue.500, pink.500)", color: 'white' }}>
+      <AccordionButton _expanded={{ bgGradient: "linear(to-r, #9945FF, #14F195)", color: 'white' }}>
         <Box>
           Generate
         </Box>
@@ -473,8 +514,8 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     </h2>
     <AccordionPanel pb={4}>
     <div>
-    {[news, selectedStyle] && <Text>Interpretation of &quot;{news}&quot; inspired by the {selectedStyle} style.</Text>}
-    <Button onClick={() => generateImage(selectedStyle)} bgGradient="linear(to-r, blue.500, pink.500)">Generate Image</Button>
+    {[news, selectedStyle] && <Text>Interpretation of &quot;{news[0]}&quot; inspired by the {selectedStyle} style.</Text>}
+    <Button onClick={() => generateImage(selectedStyle)} bgGradient="linear(to-r, #9945FF, #14F195)">Generate Image</Button>
     <Box>
     {loading && <p>Creating image, this will take a second...</p>}
     </Box>
@@ -493,7 +534,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
 
   <AccordionItem>
     <h2>
-      <AccordionButton _expanded={{ bgGradient: "linear(to-r, blue.500, pink.500)", color: 'white' }}>
+      <AccordionButton _expanded={{ bgGradient: "linear(to-r, b#9945FF, #14F195)", color: 'white' }}>
         <Box>
           Mint
         </Box>
@@ -501,7 +542,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
       </AccordionButton>
     </h2>
     <AccordionPanel pb={4}>
-    {[news, selectedStyle] && <Text>Interpretation of &quot;{news}&quot; inspired by the {selectedStyle} style.</Text>}
+    {[news, selectedStyle] && <Text>Interpretation of &quot;{news[0]}&quot; inspired by the {selectedStyle} style.</Text>}
     <Box style={{
           display: "flex",
           justifyContent: "center",
@@ -513,13 +554,13 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     <div>
     <Text>{price !== null ? `${price} SOL` : 'Loading...'}</Text>
     </div>
-      <Button onClick={handleMint} bgGradient="linear(to-r, blue.500, pink.500)">Mint your HeadlineHarmonies NFT</Button>
+      <Button onClick={handleMint} bgGradient="linear(to-r, #9945FF, #14F195)">Mint your HeadlineHarmonies NFT</Button>
     </AccordionPanel>
   </AccordionItem>
   </Accordion>
   
       {isOwner && (
-    <Button onClick={generateSpecialLink} bgGradient="linear(to-r, blue.500, pink.500)">Generate Referral Link</Button>
+    <Button onClick={generateSpecialLink} bgGradient="linear(to-r, #9945FF, #14F195)">Generate Referral Link</Button>
 )}
 
       
