@@ -4,14 +4,13 @@ import axios from 'axios';
 export async function handler(event: any, context: any) {
   try {
     const response = await axios.get('https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en');
-const parsedNews = await parseString.parseStringPromise(response.data);
-const headlines = parsedNews.rss.channel[0].item.map((item: { title: any; }) => {
-    let titleElement = item.title;
-    let originalHeadline = titleElement.textContent || titleElement.toString();
-    let lastDashIndex = originalHeadline.lastIndexOf(' - ');
-    return lastDashIndex !== -1 ? originalHeadline.substring(0, lastDashIndex) : originalHeadline;
-});
-
+    const parsedNews = await parseString.parseStringPromise(response.data);
+    const headlines = parsedNews.rss.channel[0].item.map((item: { title: any; }) => {
+      let titleElement = item.title;
+      let originalHeadline = titleElement.textContent || titleElement.toString();
+      let lastDashIndex = originalHeadline.lastIndexOf(' - ');
+      return lastDashIndex !== -1 ? originalHeadline.substring(0, lastDashIndex) : originalHeadline;
+    });
 
 return {
   statusCode: 200,
@@ -36,7 +35,3 @@ return {
     };
   }
 }
-
-function getRandomNumber(itemCount: number): number {
-    return Math.floor(Math.random() * itemCount);
-  }

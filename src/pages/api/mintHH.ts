@@ -1,5 +1,5 @@
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
-import { TransactionBuilderItemsInput, Umi, generateSigner, 
+import { TransactionBuilderItemsInput, Umi, createNoopSigner, generateSigner, 
   percentAmount, signerIdentity, sol, transactionBuilder } from '@metaplex-foundation/umi';
 import { createNft, fetchDigitalAsset, mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata';
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
@@ -42,62 +42,79 @@ function createGenericFile(arrayBuffer: ArrayBuffer,
 }
 
 export async function handler(event: any, context: any) {
-    console.log("Start mint process...");
-    //setIsOwner(true);
+  try {
+    console.log("Start backend mint process...");
 
     const umi = createUmi("https://quiet-empty-theorem.solana-devnet.quiknode.pro/7d57464a8ad6a9c0f5395d099b88e1c820789582/")
-    .use(mplTokenMetadata())
-    .use(bundlrUploader());
+      .use(mplTokenMetadata())
+      .use(bundlrUploader());
   
-    if (event.realData1 !== null) {
-      const genericFile = createGenericFile(
-        event.realData1,
-        'example.jpg', // Replace with your actual file name
-        'Example File', // Replace with your actual display name
-        'unique-identifier', // Replace with your actual unique name
-        'image/jpeg', // Replace with your actual content type
-        'jpg', // Replace with your actual extension
-        [] // Replace with your actual tags
-      );
-  
-      console.log(genericFile);
-  
-      // const uploadSigner = generateSigner(umi);
-      // umi.use(signerIdentity(uploadSigner));
-  
-      let [imageUri] = await umi.uploader.upload([genericFile]);
-      console.log("image: " + imageUri);
-  
-      let uri = await umi.uploader.uploadJson({
-        name: event.selectedStyle + " - " + event.news,
-        description: '"' + event.news + '"' + " in the " + event.selectedStyle + " style.",
-        image: imageUri,
-      });
-  
-      console.log("uri: " + uri);
-  
-      const collectionMint = generateSigner(umi);
-      //const collectionUpdateAuthority = generateSigner(umi);
+    const collectionMint = generateSigner(umi);
+
+    console.log("mint: " + collectionMint);
+
+    const newOwner = generateSigner(umi);
+
+    console.log("newowner: " + newOwner);
+
+    await umi.rpc.airdrop(newOwner.publicKey, {
+      identifier: "SOL",
+      basisPoints: BigInt(1000000000),
+      decimals: 9
+    });
+
+    const noop = createNoopSigner(newOwner.publicKey);
+
+    console.log("noop: " + noop);
+
+    // let [imageUri] = await umi.uploader.upload([event.GenericFile])
+    // console.log("image: " + imageUri);
+
+    // let uri = await umi.uploader.uploadJson({
+    //   name: news,
+    //   description: '"' + news + '"' + " in the " + selectedStyle + " style.",
+    //   image: imageUri,
+    // });
+
+    let ix = await createNft(umi, {
+        mint: collectionMint,
+        name: 'HeadlineHarmonies',
+        uri: "uri",
+        sellerFeeBasisPoints: percentAmount(5.5),
+        payer: noop,
+        authority: umi.identity,
+      })
+      .setFeePayer(noop)
+      .buildWithLatestBlockhash(umi);
+
+      let backTx = await umi.identity.signTransaction(ix);
+      backTx = await collectionMint.signTransaction(backTx);  
       
-      transactionBuilder()
-        .add(createNft(umi, {
-          mint: collectionMint,
-          isCollection: true,
-          //authority: collectionUpdateAuthority,
-          name: 'HeadlineHarmonies',
-          uri: uri,
-          sellerFeeBasisPoints: percentAmount(5.5),
-        }))
-        .add(transferSol(umi, { 
-          source: umi.identity, 
-          destination: umi.eddsa.generateKeypair().publicKey, 
-          amount: sol(0.1)}))
-        .add(transferSol(umi, { 
-          source: umi.identity, 
-          destination: umi.eddsa.generateKeypair().publicKey, 
-          amount: sol(0.1)}))
-        .sendAndConfirm(umi);
-      const asset = await fetchDigitalAsset(umi, collectionMint.publicKey)
-      console.log("New NFT data: " + asset)
+      console.log(backTx.signatures);
+      
+      const serialized = await umi.transactions.serialize(backTx);
+
+      console.log(serialized);
+
+      return {
+        statusCode: 200,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
+        },
+        body: JSON.stringify({ serialized }),
+      };
+    } catch (error) {
+      console.error('Error fetching news: ' + error);
+      return {
+        statusCode: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept',
+        },
+        body: 'Internal Server Error',
+      };
     }
-  }
+    }

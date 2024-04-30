@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { VStack, Stack, Button, Image, Text, Grid, GridItem,
   Accordion, AccordionItem, AccordionButton,AccordionPanel,
-  AccordionIcon, useMediaQuery, Container, Box } from "@chakra-ui/react";
+  AccordionIcon, useMediaQuery, Container, Box, Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription, Toast, useToast } from "@chakra-ui/react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { GenericFile, TransactionBuilderItemsInput, Umi, 
@@ -23,6 +26,10 @@ interface HHMintProps {
   userPublicKey?: string;
 }
 
+let api = process.env.HF_API;
+
+console.log(api)
+
 let currentPromptIndex = 0;
 
 const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
@@ -36,9 +43,12 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   const [realData1, setRealData] = useState<ArrayBuffer | null>(null);
   const [price, setPrice] = useState<number | null>(null);
   const [isOwner, setIsOwner] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
 
   const wallet = useWallet();
   umi.use(walletAdapterIdentity(wallet));
+
+  const toast = useToast();
 
   async function getPrice() {
     try {
@@ -230,60 +240,92 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   }
 
   async function handleMint() {
-    console.log("Start mint process...");
-    setIsOwner(true);
+    console.log("Start front mint process...");
 
-    if (realData1 !== null) {
+    import axios from 'axios';
 
-      const genericFile = createGenericFile(
-        realData1,
-        'example.jpg', // Replace with your actual file name
-        'Example File', // Replace with your actual display name
-        'unique-identifier', // Replace with your actual unique name
-        'image/jpeg', // Replace with your actual content type
-        'jpg', // Replace with your actual extension
-        [] // Replace with your actual tags
-      );
-
-      console.log(genericFile);
-
-      // const uploadSigner = generateSigner(umi);
-      // umi.use(signerIdentity(uploadSigner));
-
-      let [imageUri] = await umi.uploader.upload([genericFile]);
-      console.log("image: " + imageUri);
-
-      let uri = await umi.uploader.uploadJson({
-        name: news,
-        description: '"' + news + '"' + " in the " + selectedStyle + " style.",
-        image: imageUri,
-      });
-
-      console.log("uri: " + uri);
-
-      const mint = generateSigner(umi);
-      
-      transactionBuilder()
-
-      .add(createNft(umi, {
-        mint,
-        name: 'HeadlineHarmonies',
-        uri: uri,
-        sellerFeeBasisPoints: percentAmount(4),
-      }))
-      .add(transferSol(umi, { 
-        source: umi.identity, 
-        destination: umi.eddsa.generateKeypair().publicKey, 
-        amount: sol(0.1)}))
-        .add(transferSol(umi, { 
-          source: umi.identity, 
-          destination: umi.eddsa.generateKeypair().publicKey, 
-          amount: sol(0.1)}))
-      .sendAndConfirm(umi);
-      const asset = await fetchDigitalAsset(umi, mint.publicKey)
-      console.log("New NFT data: " + asset)
+export async function callMintFunction(genericFile: GenericFile) {
+  try {
+    const response = await axios.post('https://headlineharmonies.netlify.app/.netlify/functions/mintHH');
+    if (response.status === 200) {
+      // Minting successful
+      console.log('Minting successful:', response.data);
+      return response.data.serialized; // Or any other data you want to return
+    } else {
+      // Handle other response statuses if needed
+      console.error('Unexpected response status:', response.status);
+      return null;
     }
-  }    
+  } catch (error) {
+    // Handle errors
+    console.error('Error calling mint function:', error);
+    return null;
+  }
+}
+
+    
+    // toast({
+    //   title: 'Your HeadlineHarmonies NFT is being minted!',
+    //   description: 'As an owner of the collection you are now entitled to earn a 50% commission on all NFTs minted using your referral link.',
+    //   status: 'success',
+    //   duration: 15000, // Duration in milliseconds
+    //   isClosable: true, // Allow the user to close the toast manually
+    //   position: 'top', 
+      
+    // });
+    // setIsOwner(true);
+
+    // if (realData1 !== null) {
+
+    //   const genericFile = createGenericFile(
+    //     realData1,
+  //       'example.jpg', // Replace with your actual file name
+  //       'Example File', // Replace with your actual display name
+  //       'unique-identifier', // Replace with your actual unique name
+  //       'image/jpeg', // Replace with your actual content type
+  //       'jpg', // Replace with your actual extension
+  //       [] // Replace with your actual tags
+  //     );
+
+  //     console.log(genericFile);
+
+  //     // const uploadSigner = generateSigner(umi);
+  //     // umi.use(signerIdentity(uploadSigner));
+
+  //     let [imageUri] = await umi.uploader.upload([genericFile]);
+  //     console.log("image: " + imageUri);
+
+  //     let uri = await umi.uploader.uploadJson({
+  //       name: news,
+  //       description: '"' + news + '"' + " in the " + selectedStyle + " style.",
+  //       image: imageUri,
+  //     });
+
+  //     console.log("uri: " + uri);
+
+  //     const mint = generateSigner(umi);
+      
+  //     transactionBuilder()
+
+  //     .add(createNft(umi, {
+  //       mint,
+  //       name: 'HeadlineHarmonies',
+  //       uri: uri,
+  //       sellerFeeBasisPoints: percentAmount(4),
+  //     }))
+  //     .add(transferSol(umi, { 
+  //       source: umi.identity, 
+  //       destination: umi.eddsa.generateKeypair().publicKey, 
+  //       amount: sol(0.1)}))
+  //       .add(transferSol(umi, { 
+  //         source: umi.identity, 
+  //         destination: umi.eddsa.generateKeypair().publicKey, 
+  //         amount: sol(0.1)}))
+  //     .sendAndConfirm(umi);
+  //     const asset = await fetchDigitalAsset(umi, mint.publicKey)
+  //     console.log("New NFT data: " + asset)
+  //   }
+  // }    
 
   // async function mintNFT(file: GenericFile) {
 
@@ -318,12 +360,13 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   return !publicKey ? (
     
     <Stack gap={4} align="center">
-
+ 
+      
       <Text style={{
           maxWidth: '80%', // Limit the maximum width to prevent running off the screen
           wordWrap: 'break-word', // Allow long words to break and wrap onto the next line
           textAlign: 'center', // Center the text horizontally
-        }}> 
+        }}>
       At the crossroads of art and technology lies a first-of-its-kind NFT collection where you can 
       own a unique visual rendering of unfolding history. The combination of sublime imagery and the 
       unfiltered hope and horror of our modern world converges with the power of generative AI to 
@@ -538,7 +581,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
 
   <AccordionItem>
     <h2>
-      <AccordionButton _expanded={{ bgGradient: "linear(to-r, b#9945FF, #14F195)", color: 'white' }}>
+      <AccordionButton _expanded={{ bgGradient: "linear(to-r, #9945FF, #14F195)", color: 'white' }}>
         <Box>
           Mint
         </Box>
@@ -559,6 +602,8 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     <Text>{price !== null ? `${price} SOL` : 'Loading...'}</Text>
     </div>
       <Button onClick={handleMint} bgGradient="linear(to-r, #9945FF, #14F195)">Mint your HeadlineHarmonies NFT</Button>
+     
+      
     </AccordionPanel>
   </AccordionItem>
   </Accordion>
