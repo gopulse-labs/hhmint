@@ -240,29 +240,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   }
 
   async function handleMint() {
-    console.log("Start front mint process...");
-
-    import axios from 'axios';
-
-export async function callMintFunction(genericFile: GenericFile) {
-  try {
-    const response = await axios.post('https://headlineharmonies.netlify.app/.netlify/functions/mintHH');
-    if (response.status === 200) {
-      // Minting successful
-      console.log('Minting successful:', response.data);
-      return response.data.serialized; // Or any other data you want to return
-    } else {
-      // Handle other response statuses if needed
-      console.error('Unexpected response status:', response.status);
-      return null;
-    }
-  } catch (error) {
-    // Handle errors
-    console.error('Error calling mint function:', error);
-    return null;
-  }
-}
-
+    console.log("Start mint process...");
     
     // toast({
     //   title: 'Your HeadlineHarmonies NFT is being minted!',
@@ -279,53 +257,53 @@ export async function callMintFunction(genericFile: GenericFile) {
 
     //   const genericFile = createGenericFile(
     //     realData1,
-  //       'example.jpg', // Replace with your actual file name
-  //       'Example File', // Replace with your actual display name
-  //       'unique-identifier', // Replace with your actual unique name
-  //       'image/jpeg', // Replace with your actual content type
-  //       'jpg', // Replace with your actual extension
-  //       [] // Replace with your actual tags
-  //     );
+    //     'example.jpg', // Replace with your actual file name
+    //     'Example File', // Replace with your actual display name
+    //     'unique-identifier', // Replace with your actual unique name
+    //     'image/jpeg', // Replace with your actual content type
+    //     'jpg', // Replace with your actual extension
+    //     [] // Replace with your actual tags
+    //   );
 
-  //     console.log(genericFile);
+    //   console.log(genericFile);
 
-  //     // const uploadSigner = generateSigner(umi);
-  //     // umi.use(signerIdentity(uploadSigner));
+      // const uploadSigner = generateSigner(umi);
+      // umi.use(signerIdentity(uploadSigner));
 
-  //     let [imageUri] = await umi.uploader.upload([genericFile]);
-  //     console.log("image: " + imageUri);
+    //   let [imageUri] = await umi.uploader.upload([genericFile]);
+    //   console.log("image: " + imageUri);
 
-  //     let uri = await umi.uploader.uploadJson({
-  //       name: news,
-  //       description: '"' + news + '"' + " in the " + selectedStyle + " style.",
-  //       image: imageUri,
-  //     });
+    //   let uri = await umi.uploader.uploadJson({
+    //     name: news,
+    //     description: '"' + news + '"' + " in the " + selectedStyle + " style.",
+    //     image: imageUri,
+    //   });
 
-  //     console.log("uri: " + uri);
+    //   console.log("uri: " + uri);
 
-  //     const mint = generateSigner(umi);
+    //   const mint = generateSigner(umi);
       
-  //     transactionBuilder()
+    //   transactionBuilder()
 
-  //     .add(createNft(umi, {
-  //       mint,
-  //       name: 'HeadlineHarmonies',
-  //       uri: uri,
-  //       sellerFeeBasisPoints: percentAmount(4),
-  //     }))
-  //     .add(transferSol(umi, { 
-  //       source: umi.identity, 
-  //       destination: umi.eddsa.generateKeypair().publicKey, 
-  //       amount: sol(0.1)}))
-  //       .add(transferSol(umi, { 
-  //         source: umi.identity, 
-  //         destination: umi.eddsa.generateKeypair().publicKey, 
-  //         amount: sol(0.1)}))
-  //     .sendAndConfirm(umi);
-  //     const asset = await fetchDigitalAsset(umi, mint.publicKey)
-  //     console.log("New NFT data: " + asset)
-  //   }
-  // }    
+    //   .add(createNft(umi, {
+    //     mint,
+    //     name: 'HeadlineHarmonies',
+    //     uri: uri,
+    //     sellerFeeBasisPoints: percentAmount(4),
+    //   }))
+    //   .add(transferSol(umi, { 
+    //     source: umi.identity, 
+    //     destination: umi.eddsa.generateKeypair().publicKey, 
+    //     amount: sol(0.1)}))
+    //     .add(transferSol(umi, { 
+    //       source: umi.identity, 
+    //       destination: umi.eddsa.generateKeypair().publicKey, 
+    //       amount: sol(0.1)}))
+    //   .sendAndConfirm(umi);
+    //   const asset = await fetchDigitalAsset(umi, mint.publicKey)
+    //   console.log("New NFT data: " + asset)
+    // }
+  }    
 
   // async function mintNFT(file: GenericFile) {
 
