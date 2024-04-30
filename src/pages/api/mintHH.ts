@@ -1,10 +1,13 @@
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { TransactionBuilderItemsInput, Umi, createNoopSigner, generateSigner, 
-  percentAmount, signerIdentity, sol, transactionBuilder } from '@metaplex-foundation/umi';
+  percentAmount, signerIdentity, sol, transactionBuilder, createSignerFromKeypair } from '@metaplex-foundation/umi';
 import { createNft, fetchDigitalAsset, mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata';
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { bundlrUploader } from "@metaplex-foundation/umi-uploader-bundlr";
 import { transferSol } from "@metaplex-foundation/mpl-toolbox";
+import { Keypair } from '@solana/web3.js';
+import bs58 from 'bs58';
+import { fromWeb3JsKeypair } from '@metaplex-foundation/umi-web3js-adapters';
 
 interface GenericFileTag {
     // Define your GenericFileTag properties here
@@ -53,17 +56,22 @@ export async function handler(event: any, context: any) {
 
     console.log("mint: " + collectionMint);
 
-    const newOwner = generateSigner(umi);
+    const keypair = Keypair.fromSecretKey(
+      bs58.decode(
+        "33gqSGMNmo9QmzuFiGK4t8jZFmeKgWXiM4jFvQ9zSmJL6RuMupY2hFnsErAhwaQhxe9ZgzSqQBnNYzHq5yphYLrU"
+      )
+    );
 
-    console.log("newowner: " + newOwner);
+    console.log(keypair);
 
-    await umi.rpc.airdrop(newOwner.publicKey, {
-      identifier: "SOL",
-      basisPoints: BigInt(1000000000),
-      decimals: 9
-    });
+    let newpair = fromWeb3JsKeypair(keypair);
 
-    const noop = createNoopSigner(newOwner.publicKey);
+    const signer = createSignerFromKeypair(umi, newpair);
+
+    console.log(signer);
+
+
+    const noop = createNoopSigner(newpair.publicKey);
 
     console.log("noop: " + noop);
 

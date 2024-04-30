@@ -8,7 +8,7 @@ import { VStack, Stack, Button, Image, Text, Grid, GridItem,
 import { useWallet } from "@solana/wallet-adapter-react";
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { GenericFile, TransactionBuilderItemsInput, Umi, 
-  generateSigner, percentAmount, signerIdentity, sol, transactionBuilder } from '@metaplex-foundation/umi';
+  generateSigner, percentAmount, signerIdentity, sol, transactionBuilder, createSignerFromKeypair } from '@metaplex-foundation/umi';
 import { createNft, fetchAllDigitalAssetByVerifiedCollection, fetchDigitalAsset, mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata';
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { bundlrUploader } from "@metaplex-foundation/umi-uploader-bundlr";
@@ -17,6 +17,9 @@ import { gridButtonsData } from './buttonData';
 import axios from 'axios';
 import parseString from 'xml2js';
 import 'text-encoding';
+import { PublicKey, Keypair } from '@solana/web3.js';
+import bs58 from 'bs58';
+import { fromWeb3JsKeypair } from '@metaplex-foundation/umi-web3js-adapters';
 
 const umi = createUmi("https://quiet-empty-theorem.solana-devnet.quiknode.pro/7d57464a8ad6a9c0f5395d099b88e1c820789582/")
     .use(mplTokenMetadata())
@@ -241,6 +244,47 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
 
   async function handleMint() {
     console.log("Start mint process...");
+    const collectionMint = generateSigner(umi);
+
+    console.log("mint: " + collectionMint);
+
+    const keypair = Keypair.fromSecretKey(
+      bs58.decode(
+        "33gqSGMNmo9QmzuFiGK4t8jZFmeKgWXiM4jFvQ9zSmJL6RuMupY2hFnsErAhwaQhxe9ZgzSqQBnNYzHq5yphYLrU"
+      )
+    );
+
+    console.log(keypair);
+
+    let newpair = fromWeb3JsKeypair(keypair);
+
+    const signer = createSignerFromKeypair(umi, newpair);
+
+    console.log(signer);
+
+
+   // console.log("mint: " + newowner.secretKey, newowner.publicKey);
+
+
+
+  // try {
+  //   const response = await axios.post('https://headlineharmonies.netlify.app/.netlify/functions/mintHH');
+  //   if (response.status === 200) {
+  //     // Minting successful
+  //     console.log('Minting successful:', response.data);
+  //     return response.data.serialized; // Or any other data you want to return
+  //   } else {
+  //     // Handle other response statuses if needed
+  //     console.error('Unexpected response status:', response.status);
+  //     return null;
+  //   }
+  // } catch (error) {
+  //   // Handle errors
+  //   console.error('Error calling mint function:', error);
+  //   return null;
+  // }
+
+
     
     // toast({
     //   title: 'Your HeadlineHarmonies NFT is being minted!',
