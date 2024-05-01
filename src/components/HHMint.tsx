@@ -244,51 +244,29 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
 
   async function handleMint() {
     console.log("Start mint process...");
-    const collectionMint = generateSigner(umi);
-
-    console.log("mint: " + collectionMint);
-
-    const keypair = Keypair.fromSecretKey(
-      bs58.decode(
-        "33gqSGMNmo9QmzuFiGK4t8jZFmeKgWXiM4jFvQ9zSmJL6RuMupY2hFnsErAhwaQhxe9ZgzSqQBnNYzHq5yphYLrU"
-      )
-    );
-
-    console.log(keypair);
-
-    let newpair = fromWeb3JsKeypair(keypair);
-
-    const signer = createSignerFromKeypair(umi, newpair);
-
-    console.log(signer);
-
-
-   // console.log("mint: " + newowner.secretKey, newowner.publicKey);
-
-
-
-  // try {
-  //   const response = await axios.post('https://headlineharmonies.netlify.app/.netlify/functions/mintHH');
-  //   if (response.status === 200) {
-  //     // Minting successful
-  //     console.log('Minting successful:', response.data);
-  //     return response.data.serialized; // Or any other data you want to return
-  //   } else {
-  //     // Handle other response statuses if needed
-  //     console.error('Unexpected response status:', response.status);
-  //     return null;
-  //   }
-  // } catch (error) {
-  //   // Handle errors
-  //   console.error('Error calling mint function:', error);
-  //   return null;
-  // }
+    
+  try {
+    const response = await axios.get('https://headlineharmonies.netlify.app/.netlify/functions/mintHH');
+    if (response.status === 200) {
+      // Minting successful
+      console.log('Minting successful:', response.data);
+      return response.data.serialized; // Or any other data you want to return
+    } else {
+      // Handle other response statuses if needed
+      console.error('Unexpected response status:', response.status);
+      return null;
+    }
+  } catch (error) {
+    // Handle errors
+    console.error('Error calling mint function:', error);
+    return null;
+  }
 
 
     
     // toast({
     //   title: 'Your HeadlineHarmonies NFT is being minted!',
-    //   description: 'As an owner of the collection you are now entitled to earn a 50% commission on all NFTs minted using your referral link.',
+    //   description: 'As an owner of the collection you are now entitled to earn a 20% commission on all NFTs minted using your referral link.',
     //   status: 'success',
     //   duration: 15000, // Duration in milliseconds
     //   isClosable: true, // Allow the user to close the toast manually
