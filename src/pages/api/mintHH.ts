@@ -1,6 +1,6 @@
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { TransactionBuilderItemsInput, Umi, createNoopSigner, generateSigner, 
-  percentAmount, signerIdentity, sol, transactionBuilder, createSignerFromKeypair } from '@metaplex-foundation/umi';
+  percentAmount, signerIdentity, sol, transactionBuilder, createSignerFromKeypair, keypairIdentity } from '@metaplex-foundation/umi';
 import { createNft, fetchDigitalAsset, mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata';
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { bundlrUploader } from "@metaplex-foundation/umi-uploader-bundlr";
@@ -68,12 +68,15 @@ export async function handler(event: any, context: any) {
 
     const signer = createSignerFromKeypair(umi, newpair);
 
+    umi.use(keypairIdentity(signer))
+
     console.log(signer);
 
 
     const noop = createNoopSigner(newpair.publicKey);
 
     console.log("noop: " + noop);
+  
 
     // let [imageUri] = await umi.uploader.upload([event.GenericFile])
     // console.log("image: " + imageUri);
