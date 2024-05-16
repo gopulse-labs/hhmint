@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { VStack, Stack, Button, Image, Text, Grid, GridItem,
   Accordion, AccordionItem, AccordionButton,AccordionPanel,
   AccordionIcon, useMediaQuery, Container, Box, Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription, Toast, useToast } from "@chakra-ui/react";
+  AlertIcon, AlertTitle, AlertDescription, Toast, useToast } from "@chakra-ui/react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { GenericFile, TransactionBuilderItemsInput, Umi, 
@@ -21,19 +19,21 @@ import { PublicKey, Keypair } from '@solana/web3.js';
 import bs58 from 'bs58';
 import { fromWeb3JsKeypair } from '@metaplex-foundation/umi-web3js-adapters';
 
-const umi = createUmi("https://quiet-empty-theorem.solana-devnet.quiknode.pro/7d57464a8ad6a9c0f5395d099b88e1c820789582/")
-    .use(mplTokenMetadata())
-    .use(bundlrUploader());
+const rpcNode = process.env.rpcNode;
+let currentPromptIndex = 0;
+let umi: Umi;
+
+if (rpcNode) {
+  umi = createUmi(rpcNode)
+  .use(mplTokenMetadata())
+  .use(bundlrUploader());
+} else {
+  console.error('RPC node environment variable is not defined.');
+}
 
 interface HHMintProps {
   userPublicKey?: string;
 }
-
-let api = process.env.HF_API;
-
-console.log(api)
-
-let currentPromptIndex = 0;
 
 const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   const { select, wallets, publicKey, disconnect } = useWallet();
@@ -61,31 +61,21 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
           salesPreviousSixHours: 22
         }
       });
-      // const response = await axios.get('http://localhost:3000/api/getPrice', {
-      //   params: {
-      //     salesLastSixHours: 77,
-      //     salesPreviousSixHours: 22
-      //   }
-      // });
       const price = parseFloat(response.data);
       console.log(price)
-      setPrice(price);
+      setPrice(1);
     } catch (error) {
       console.error('Error fetching price:', error);
     }
   }
 
   useEffect(() => {
-    // Access userPublicKey here
     if (userPublicKey) {
-      console.log('User Public Key:', userPublicKey);
+      console.log('Referral Key: ', userPublicKey);
     }
-
     fetchHeadline();
     getPrice();
-
   }, [userPublicKey]);
-
 
   async function fetchHeadline() {  
     try {
@@ -95,33 +85,68 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     } catch (error) {
         console.error('Error fetching news:', error);
     }
-}
-
+  }
 
   function handleStyleClick(style: string, id: string) {
     setSelectedStyle(style);
-
-      // Remove the selected class from all buttons except the clicked one
-      gridButtonsData.forEach(button => {
-        if (button.id !== id) {
-          document.getElementById(button.id)?.classList.remove('selected');
-        }
-      });
-      // Add the selected class to the clicked button
-      document.getElementById(id)?.classList.add('selected');
+    gridButtonsData.forEach(button => {
+      if (button.id !== id) {
+        document.getElementById(button.id)?.classList.remove('selected');
+      }
+    });
+    document.getElementById(id)?.classList.add('selected');
   }
 
-  function handleHeadlineClick(headline: string, index: number) {
-    setSelectedHeadline(headline);
-
-    // Remove the selected class from all buttons except the clicked one
+  async function handleHeadlineClick(headline: string, index: number) {
+    setSelectedHeadline(headline); // Assuming setSelectedHeadline sets the selected headline state
     document.querySelectorAll('.headline-button').forEach((button) => {
-      button.classList.remove('selected');
+        button.classList.remove('selected');
     });
-
-    // Add the selected class to the clicked button
     document.getElementById(`headline-button-${index}`)?.classList.add('selected');
 
+    // Call queryHeadlines for the selected headline
+    const scores = await queryHeadlines([headline]).then((response) => {
+      // Extracting the score using regular expression
+      const regex = /(\d+\.\d+)/; // Match any number with decimal
+      const match = response[0][0].generated_text.match(regex); // Assuming the response structure is consistent
+  
+      if (match) {
+          const score = parseFloat(match[0]);
+          console.log(score);
+      } else {
+          console.error('Score not found in the response');
+      }
+  });
+    console.log('Scores for the selected headline:', scores);
+}
+
+
+  async function queryHeadlines(news: string[]) {
+  const hfApi = process.env.hfApi;
+  const scores = [];
+
+  if (hfApi) {
+      for (const headline of news) {
+        const data = {
+          "inputs": "Score the historical significance of the following news headline from 0.01 to 0.99: " + headline + ". Return just the number, absolutely no text",
+      };
+        console.log(data)
+          const response = await fetch(
+              "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
+              {
+                  headers: { 
+                  "Content-Type": "application/json",
+                  Authorization: hfApi },
+                  method: "POST",
+                  body: JSON.stringify(data),
+              }
+          );
+          const result = await response.json();
+          scores.push(result);
+      }
+  }
+
+  return scores;
 }
 
   useEffect(() => {
@@ -148,44 +173,43 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
 
       const currentPrompt = prompts[currentPromptIndex];
       console.log(currentPrompt);
-      console.log(currentPromptIndex);     
       
-      const response = await fetch(
-        "https://api-inference.huggingface.co/models/prompthero/openjourney",
-        {
-          headers: { Authorization: "Bearer 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" },
-          method: "POST",
-          body: JSON.stringify({ inputs: currentPrompt }),
+      const hfApi = process.env.hfApi;
+      const hfApiEndpoint = process.env.HF_API_ENDPOINT;
+
+      if (hfApi && hfApiEndpoint) {
+        const response = await fetch(
+          hfApiEndpoint,
+          {
+            headers: { Authorization: hfApi },
+            method: "POST",
+            body: JSON.stringify({ inputs: currentPrompt }),
+          }
+        );
+
+        currentPromptIndex++;
+        console.log(currentPromptIndex);
+        
+        if (currentPromptIndex === prompts.length) {
+          currentPromptIndex = 0;
         }
-      );
-  
-      currentPromptIndex++;
-      console.log(currentPromptIndex);
+        
+        if (!response.ok) {
+          setLoading(false);
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
       
-      if (currentPromptIndex === prompts.length) {
-        currentPromptIndex = 0;
-      }
-      
-      if (!response.ok) {
+        const blob = await response.blob();
+        const realData = await blob.arrayBuffer();
+        setRealData(realData);
+
+        const base64Data = btoa(String.fromCharCode(...new Uint8Array(realData)));
+        const dataUrl = `data:image/jpeg;base64,${base64Data}`;
         setLoading(false);
-        throw new Error(`HTTP error! Status: ${response.status}`);
+        setImageSrc(dataUrl);
+      } else {
+        console.error('Hugging Face API environment variable is not defined.');
       }
-  
-      const blob = await response.blob();
-      const realData = await blob.arrayBuffer();
-      setRealData(realData);
-
-      // Convert ArrayBuffer to base64
-      const base64Data = btoa(String.fromCharCode(...new Uint8Array(realData)));
-
-      // Create a data URL from the base64 data
-      const dataUrl = `data:image/jpeg;base64,${base64Data}`;
-
-      setLoading(false);
-
-      // Set the image source in the component state
-      setImageSrc(dataUrl);
-
     } catch (error) {
       console.error('Error fetching data:', error);
     }
@@ -194,178 +218,60 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   function generateSpecialLink() {
     if (publicKey) {
       const specialLink = `http://localhost:3000/${publicKey.toBase58()}`;
-
-      // Copy to clipboard
       navigator.clipboard.writeText(specialLink)
         .then(() => {
-          console.log('Special link copied to clipboard:', specialLink);
-          // You can provide user feedback here if needed
+          console.log('Special link copied to clipboard: ', specialLink);
         })
         .catch((error) => {
-          console.error('Error copying to clipboard:', error);
+          console.error('Error copying to clipboard: ', error);
         });
     }
   }
 
-  interface GenericFileTag {
-    // Define your GenericFileTag properties here
-    name: string;
-    value: string;
-  }
-
-  interface GenericFile {
-    readonly buffer: Uint8Array;
-    readonly fileName: string;
-    readonly displayName: string;
-    readonly uniqueName: string;
-    readonly contentType: string | null;
-    readonly extension: string | null;
-    readonly tags: GenericFileTag[];
-  }
-
-  // Function to create GenericFile from ArrayBuffer
-  function createGenericFile(arrayBuffer: ArrayBuffer,
-    fileName: string,
-    displayName: string,
-    uniqueName: string,
-    contentType: string | null,
-    extension: string | null,
-    tags: GenericFileTag[]): GenericFile {
-    return ({
-      buffer: new Uint8Array(arrayBuffer),
-      fileName,
-      displayName,
-      uniqueName,
-      contentType,
-      extension,
-      tags,
-    });
-  }
-
-  async function handleMint() {
+  async function handleMint(image: string, selectedHeadline: string, selectedStyle: string) {
     console.log("Start mint process...");
     
-  try {
-    const response = await axios.get('https://headlineharmonies.netlify.app/.netlify/functions/mintHH');
-    if (response.status === 200) {
-      // Minting successful
-      console.log('Minting successful:', response.data);
-      return response.data.serialized; // Or any other data you want to return
-    } else {
-      // Handle other response statuses if needed
-      console.error('Unexpected response status:', response.status);
+    try {
+      const response = await axios.post('https://headlineharmonies.netlify.app/.netlify/functions/mintHH', {
+        image: image,
+        selectedHeadline: selectedHeadline,
+        selectedStyle: selectedStyle
+      });
+      if (response.status === 200) {
+        console.log('Minting successful: ', response.data.serialized);
+        const arr: unknown[] = Object.values(response.data.serialized); // Example array of numbers
+        const uint8Array = new Uint8Array(arr.map(num => Number(num)));
+        const deserialized = umi.transactions.deserialize(uint8Array);
+        await umi.identity.signTransaction(deserialized)
+        await umi.rpc.sendTransaction(deserialized)
+      } else {
+        console.error('Unexpected response status: ', response.status);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error calling mint function: ', error);
       return null;
     }
-  } catch (error) {
-    // Handle errors
-    console.error('Error calling mint function:', error);
-    return null;
-  }
+}
 
 
-    
     // toast({
     //   title: 'Your HeadlineHarmonies NFT is being minted!',
     //   description: 'As an owner of the collection you are now entitled to earn a 20% commission on all NFTs minted using your referral link.',
     //   status: 'success',
-    //   duration: 15000, // Duration in milliseconds
-    //   isClosable: true, // Allow the user to close the toast manually
+    //   duration: 15000,
+    //   isClosable: true,
     //   position: 'top', 
-      
-    // });
-    // setIsOwner(true);
-
-    // if (realData1 !== null) {
-
-    //   const genericFile = createGenericFile(
-    //     realData1,
-    //     'example.jpg', // Replace with your actual file name
-    //     'Example File', // Replace with your actual display name
-    //     'unique-identifier', // Replace with your actual unique name
-    //     'image/jpeg', // Replace with your actual content type
-    //     'jpg', // Replace with your actual extension
-    //     [] // Replace with your actual tags
-    //   );
-
-    //   console.log(genericFile);
-
-      // const uploadSigner = generateSigner(umi);
-      // umi.use(signerIdentity(uploadSigner));
-
-    //   let [imageUri] = await umi.uploader.upload([genericFile]);
-    //   console.log("image: " + imageUri);
-
-    //   let uri = await umi.uploader.uploadJson({
-    //     name: news,
-    //     description: '"' + news + '"' + " in the " + selectedStyle + " style.",
-    //     image: imageUri,
-    //   });
-
-    //   console.log("uri: " + uri);
-
-    //   const mint = generateSigner(umi);
-      
-    //   transactionBuilder()
-
-    //   .add(createNft(umi, {
-    //     mint,
-    //     name: 'HeadlineHarmonies',
-    //     uri: uri,
-    //     sellerFeeBasisPoints: percentAmount(4),
-    //   }))
-    //   .add(transferSol(umi, { 
-    //     source: umi.identity, 
-    //     destination: umi.eddsa.generateKeypair().publicKey, 
-    //     amount: sol(0.1)}))
-    //     .add(transferSol(umi, { 
-    //       source: umi.identity, 
-    //       destination: umi.eddsa.generateKeypair().publicKey, 
-    //       amount: sol(0.1)}))
-    //   .sendAndConfirm(umi);
-    //   const asset = await fetchDigitalAsset(umi, mint.publicKey)
-    //   console.log("New NFT data: " + asset)
-    // }
-  }    
-
-  // async function mintNFT(file: GenericFile) {
-
-  //     const uploadSigner = generateSigner(umi);
-  //     umi.use(signerIdentity(uploadSigner));
-
-  //   let [imageUri] = await umi.uploader.upload([file])
-    
-  //   let uri = await umi.uploader.uploadJson({
-  //     name: "name",
-  //     description: "description",
-  //     image: imageUri,
-  //   })
-
-  // umi.use(walletAdapterIdentity(wallet));
-  //   const mint = generateSigner(umi)
-    
-  //   transactionBuilder()
-  //     .add(createNft(umi, {
-  //       mint,
-  //       name: "Collection Name",
-  //       uri: uri,
-  //       sellerFeeBasisPoints: percentAmount(5.5),
-  //     }))
-  //     .add(transferSol(umi, { 
-  //       source: umi.identity, 
-  //       destination: umi.eddsa.generateKeypair().publicKey, 
-  //       amount: sol(0.3)}))
-  //     .sendAndConfirm(umi)
-  // }
+  
 
   return !publicKey ? (
     
     <Stack gap={4} align="center">
  
-      
       <Text style={{
-          maxWidth: '80%', // Limit the maximum width to prevent running off the screen
-          wordWrap: 'break-word', // Allow long words to break and wrap onto the next line
-          textAlign: 'center', // Center the text horizontally
+          maxWidth: '80%',
+          wordWrap: 'break-word',
+          textAlign: 'center',
         }}>
       At the crossroads of art and technology lies a first-of-its-kind NFT collection where you can 
       own a unique visual rendering of unfolding history. The combination of sublime imagery and the 
@@ -413,9 +319,9 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
  
       <Text
         style={{
-          maxWidth: '80%', // Limit the maximum width to prevent running off the screen
-          wordWrap: 'break-word', // Allow long words to break and wrap onto the next line
-          textAlign: 'center', // Center the text horizontally
+          maxWidth: '80%',
+          wordWrap: 'break-word',
+          textAlign: 'center',
         }}
       >
         {publicKey.toBase58()}
@@ -424,9 +330,9 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
       <Button onClick={disconnect} bgGradient="linear(to-r, #9945FF, #14F195)">Disconnect Wallet</Button>
 
       <Text style={{
-          maxWidth: '80%', // Limit the maximum width to prevent running off the screen
-          wordWrap: 'break-word', // Allow long words to break and wrap onto the next line
-          textAlign: 'center', // Center the text horizontally
+          maxWidth: '80%',
+          wordWrap: 'break-word',
+          textAlign: 'center',
         }}>
       Using your chosen headline and visual style, any current event can be transformed into an 
       artistic masterpiece that echoes the pulse of contemporary life.
@@ -450,53 +356,51 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
             </AccordionButton>
           </h2>
 
-
-<AccordionPanel pb={4}>
-{selectedHeadline && <Text>{selectedHeadline}</Text>}  
-    <Grid
-      templateColumns={{ base: 'repeat(1, 1fr)', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }}
-      gap={4}
-    >
-      {news.map((headline, index) => (
-        <GridItem key={index}>
-          <Button
-            size="md"
-            width="auto"
-            height="auto"
-            borderRadius="md"
-            onClick={() => handleHeadlineClick(headline, index)}
-            style={
-              selectedHeadline === headline
-                ? {
-                    backgroundImage: 'linear-gradient(to right, #9945FF, #14F195)',
-                    color: 'white',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    display: 'flex',
-                  }
-                : {
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    display: 'flex',
-                  }
-            }
-            className="headline-button"
-            id={`headline-button-${index}`}
-            px={4}
-            py={2}
-          >
-            <Text
-              // Allow text to wrap to multiple lines
-  style={{ whiteSpace: 'normal', wordWrap: 'break-word' }}
-  textAlign="center"
-            >{headline}</Text>
-          </Button>
-        </GridItem>
-      ))}
-    </Grid>
-  
-</AccordionPanel>
-
+          <AccordionPanel pb={4}>
+          {selectedHeadline && <Text>{selectedHeadline}</Text>}  
+              <Grid
+                templateColumns={{ base: 'repeat(1, 1fr)', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }}
+                gap={4}
+              >
+                {news.map((headline, index) => (
+                  <GridItem key={index}>
+                    <Button
+                      size="md"
+                      width="100%"
+                      maxWidth="300px"
+                      height="auto"
+                      borderRadius="md"
+                      onClick={() => handleHeadlineClick(headline, index)}
+                      style={
+                        selectedHeadline === headline
+                          ? {
+                              backgroundImage: 'linear-gradient(to right, #9945FF, #14F195)',
+                              color: 'white',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              display: 'flex',
+                            }
+                          : {
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              display: 'flex',
+                            }
+                      }
+                      className="headline-button"
+                      id={`headline-button-${index}`}
+                      px={4}
+                      py={2}
+                    >
+                      <Text
+                        // Allow text to wrap to multiple lines
+            style={{ whiteSpace: 'normal', wordWrap: 'break-word' }}
+            textAlign="center"
+                      >{headline}</Text>
+                    </Button>
+                  </GridItem>
+                ))}
+              </Grid>
+          </AccordionPanel>
         </AccordionItem>
 
         <AccordionItem>
@@ -549,8 +453,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
           </AccordionPanel>
         </AccordionItem>
       
-      
-      <AccordionItem>
+    <AccordionItem>
     <h2>
       <AccordionButton _expanded={{ bgGradient: "linear(to-r, #9945FF, #14F195)", color: 'white' }}>
         <Box>
@@ -570,7 +473,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     <Box style={{
           display: "flex",
           justifyContent: "center",
-          alignItems: "center", // Center vertically
+          alignItems: "center",
           textAlign: "center"
         }}>
     {imageSrc && <Image src={imageSrc} alt="Generated Image" />}
@@ -593,7 +496,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     <Box style={{
           display: "flex",
           justifyContent: "center",
-          alignItems: "center", // Center vertically
+          alignItems: "center",
           textAlign: "center"
         }}>
     {imageSrc && <Image src={imageSrc} alt="Generated Image" />}
@@ -601,22 +504,25 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     <div>
     <Text>{price !== null ? `${price} SOL` : 'Loading...'}</Text>
     </div>
-      <Button onClick={handleMint} bgGradient="linear(to-r, #9945FF, #14F195)">Mint your HeadlineHarmonies NFT</Button>
-     
+    <Button onClick={() => {
+  if (imageSrc && selectedHeadline && selectedStyle) {
+    handleMint(imageSrc, selectedHeadline, selectedStyle);
+  } else {
+    console.error("ImageSrc is null");
+  }
+}} bgGradient="linear(to-r, #9945FF, #14F195)">Mint your HeadlineHarmonies NFT</Button>
       
     </AccordionPanel>
   </AccordionItem>
   </Accordion>
   
-      {isOwner && (
-    <Button onClick={generateSpecialLink} bgGradient="linear(to-r, #9945FF, #14F195)">Generate Referral Link</Button>
-)}
+    {isOwner && (   
+      <Button onClick={generateSpecialLink} bgGradient="linear(to-r, #9945FF, #14F195)">Generate Referral Link</Button>
+    )}
 
-      
-      <footer>Presented by GoPulse Labs</footer>
-      <br />
+    <footer>Presented by GoPulse Labs</footer>
+    <br />
     </Stack>
-  
   );
 };
 

@@ -1,7 +1,7 @@
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { TransactionBuilderItemsInput, Umi, createNoopSigner, generateSigner, 
-  percentAmount, signerIdentity, sol, transactionBuilder, createSignerFromKeypair, keypairIdentity } from '@metaplex-foundation/umi';
-import { createNft, fetchDigitalAsset, mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata';
+  percentAmount, publicKey, signerIdentity, sol, transactionBuilder, createSignerFromKeypair, keypairIdentity } from '@metaplex-foundation/umi';
+import { createNft, fetchDigitalAsset, findMetadataPda, mplTokenMetadata, verifyCollectionV1 } from '@metaplex-foundation/mpl-token-metadata';
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { bundlrUploader } from "@metaplex-foundation/umi-uploader-bundlr";
 import { transferSol } from "@metaplex-foundation/mpl-toolbox";
@@ -44,17 +44,31 @@ function createGenericFile(arrayBuffer: ArrayBuffer,
   });
 }
 
+
+
 export async function handler(event: any, context: any) {
   try {
     console.log("Start backend mint process...");
+
+    const { image, selectedHeadline, selectedStyle } = event.body;
+
+    const genericFile = createGenericFile(
+        image,
+        'example.jpg', // Replace with your actual file name
+        'Example File', // Replace with your actual display name
+        'unique-identifier', // Replace with your actual unique name
+        'image/jpeg', // Replace with your actual content type
+        'jpg', // Replace with your actual extension
+        [] // Replace with your actual tags
+    );
 
     const umi = createUmi("https://quiet-empty-theorem.solana-devnet.quiknode.pro/7d57464a8ad6a9c0f5395d099b88e1c820789582/")
       .use(mplTokenMetadata())
       .use(bundlrUploader());
   
-    const collectionMint = generateSigner(umi);
+    const mint = generateSigner(umi);
 
-    console.log("mint: " + collectionMint);
+    console.log("mint: " + mint);
 
     const keypair = Keypair.fromSecretKey(
       bs58.decode(
@@ -72,34 +86,46 @@ export async function handler(event: any, context: any) {
 
     console.log(signer);
 
-
     const noop = createNoopSigner(newpair.publicKey);
 
     console.log("noop: " + noop);
   
 
-    // let [imageUri] = await umi.uploader.upload([event.GenericFile])
-    // console.log("image: " + imageUri);
+    let [imageUri] = await umi.uploader.upload([genericFile])
+    console.log("image: " + imageUri);
 
-    // let uri = await umi.uploader.uploadJson({
-    //   name: news,
-    //   description: '"' + news + '"' + " in the " + selectedStyle + " style.",
-    //   image: imageUri,
-    // });
+    let uri = await umi.uploader.uploadJson({
+      name: selectedHeadline,
+      description: '"' + selectedHeadline + '"' + " in the " + selectedStyle + " style.",
+      image: imageUri,
+    });
 
-    let ix = await createNft(umi, {
-        mint: collectionMint,
-        name: 'HeadlineHarmonies',
-        uri: "uri",
-        sellerFeeBasisPoints: percentAmount(5.5),
-        payer: noop,
-        authority: umi.identity,
-      })
-      .setFeePayer(noop)
-      .buildWithLatestBlockhash(umi);
+    let meta = findMetadataPda(umi, { mint: mint.publicKey})
+
+ let ix = await createNft(umi, {
+  mint: mint,
+  name: selectedHeadline,
+  uri: uri,
+  sellerFeeBasisPoints: percentAmount(5.5),
+  payer: noop,
+  authority: umi.identity,
+    collection: {
+      key: publicKey("457A4L3Np9pp9SoDgvJ2EGprfXnjWBHMvrynjtCdUGWY"),
+      verified: false,
+    },
+  })
+
+  .add(verifyCollectionV1(umi, {
+    metadata: meta,
+    collectionMint: publicKey("457A4L3Np9pp9SoDgvJ2EGprfXnjWBHMvrynjtCdUGWY"),
+    authority: umi.identity,
+  }))
+  .setFeePayer(noop)
+  .buildWithLatestBlockhash(umi);
+
 
       let backTx = await umi.identity.signTransaction(ix);
-      backTx = await collectionMint.signTransaction(backTx);  
+      backTx = await mint.signTransaction(backTx);  
       
       console.log(backTx.signatures);
       
