@@ -47,7 +47,7 @@ export async function handler(event: any, context: any) {
   try {
     console.log("Start backend mint process...");
 
-    console.log("Event: " + event.body);
+    console.log(": " + event.body.selectedHeadline);
 
 
     const genericFile = createGenericFile(
