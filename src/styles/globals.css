@@ -85,10 +85,6 @@ body {
   overflow-x: hidden;
 }
 
-.selected {
-  /* Add your selected styles here */
-  border: 2px solid blue; /* For example, change the border color */
-}
 
 body {
   color: rgb(var(--foreground-rgb));

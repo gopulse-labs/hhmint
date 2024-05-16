@@ -49,6 +49,14 @@ export async function handler(event: any, context: any) {
 
     const { image, selectedHeadline, selectedStyle } = event.body;
 
+    console.log("Event: " + event);
+
+    const requestBody = JSON.parse(event.body);
+    const { image1, selectedHeadline1, selectedStyle1 } = requestBody;
+
+    console.log("request body: " + requestBody);
+    console.log("body: " + image1, selectedHeadline1, selectedStyle1);
+
     const genericFile = createGenericFile(
         image,
         'example.jpg', // Replace with your actual file name
@@ -101,7 +109,6 @@ export async function handler(event: any, context: any) {
       uri: uri,
       sellerFeeBasisPoints: percentAmount(5.5),
       payer: noop,
-      authority: umi.identity,
         collection: {
           key: publicKey("457A4L3Np9pp9SoDgvJ2EGprfXnjWBHMvrynjtCdUGWY"),
           verified: false,
