@@ -47,18 +47,11 @@ export async function handler(event: any, context: any) {
   try {
     console.log("Start backend mint process...");
 
-    const { image, selectedHeadline, selectedStyle } = event.body;
-
     console.log("Event: " + event.body);
 
-    const requestBody = JSON.parse(event.body);
-    const { image1, selectedHeadline1, selectedStyle1 } = requestBody;
-
-    console.log("request body: " + requestBody);
-    console.log("body: " + image1, selectedHeadline1, selectedStyle1);
 
     const genericFile = createGenericFile(
-        image,
+        event.body.image,
         'example.jpg', // Replace with your actual file name
         'Example File', // Replace with your actual display name
         'unique-identifier', // Replace with your actual unique name
@@ -92,8 +85,8 @@ export async function handler(event: any, context: any) {
     console.log("ImageUri: " + imageUri);
 
     let uri = await umi.uploader.uploadJson({
-      name: selectedHeadline,
-      description: '"' + selectedHeadline + '"' + " in the " + selectedStyle + " style.",
+      name: event.body.selectedHeadline,
+      description: '"' + event.body.selectedHeadline + '"' + " in the " + event.body.selectedStyle + " style.",
       image: imageUri,
     });
 
@@ -105,7 +98,7 @@ export async function handler(event: any, context: any) {
 
     let ix = await createNft(umi, {
       mint: mint,
-      name: selectedHeadline,
+      name: event.body.selectedHeadline,
       uri: uri,
       sellerFeeBasisPoints: percentAmount(5.5),
       payer: noop,
