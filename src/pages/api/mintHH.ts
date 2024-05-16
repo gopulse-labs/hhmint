@@ -49,7 +49,7 @@ export async function handler(event: any, context: any) {
 
     const { image, selectedHeadline, selectedStyle } = event.body;
 
-    console.log("Event: " + event);
+    console.log("Event: " + event.body);
 
     const requestBody = JSON.parse(event.body);
     const { image1, selectedHeadline1, selectedStyle1 } = requestBody;
@@ -114,11 +114,11 @@ export async function handler(event: any, context: any) {
           verified: false,
         },
       })
-      .add(verifyCollectionV1(umi, {
-        metadata: meta,
-        collectionMint: publicKey("457A4L3Np9pp9SoDgvJ2EGprfXnjWBHMvrynjtCdUGWY"),
-        authority: umi.identity,
-      }))
+      // .add(verifyCollectionV1(umi, {
+      //   metadata: meta,
+      //   collectionMint: publicKey("457A4L3Np9pp9SoDgvJ2EGprfXnjWBHMvrynjtCdUGWY"),
+      //   authority: umi.identity,
+      // }))
       .setFeePayer(noop)
       .buildWithLatestBlockhash(umi);
 
@@ -141,7 +141,7 @@ export async function handler(event: any, context: any) {
         body: JSON.stringify({ serialized }),
       };
     } catch (error) {
-      console.error('Error fetching news: ' + error);
+      console.error('Error minting: ' + error);
       return {
         statusCode: 500,
         headers: {
