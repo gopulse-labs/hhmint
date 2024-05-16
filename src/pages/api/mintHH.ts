@@ -25,7 +25,6 @@ interface GenericFile {
   readonly tags: GenericFileTag[];
 }
 
-// Function to create GenericFile from ArrayBuffer
 function createGenericFile(arrayBuffer: ArrayBuffer,
   fileName: string,
   displayName: string,
@@ -43,8 +42,6 @@ function createGenericFile(arrayBuffer: ArrayBuffer,
       tags,
   });
 }
-
-
 
 export async function handler(event: any, context: any) {
   try {
@@ -68,15 +65,11 @@ export async function handler(event: any, context: any) {
   
     const mint = generateSigner(umi);
 
-    console.log("mint: " + mint);
-
     const keypair = Keypair.fromSecretKey(
       bs58.decode(
         "33gqSGMNmo9QmzuFiGK4t8jZFmeKgWXiM4jFvQ9zSmJL6RuMupY2hFnsErAhwaQhxe9ZgzSqQBnNYzHq5yphYLrU"
       )
     );
-
-    console.log(keypair);
 
     let newpair = fromWeb3JsKeypair(keypair);
 
@@ -84,15 +77,11 @@ export async function handler(event: any, context: any) {
 
     umi.use(keypairIdentity(signer))
 
-    console.log(signer);
-
-    const noop = createNoopSigner(newpair.publicKey);
-
-    console.log("noop: " + noop);
-  
+    const noop = createNoopSigner(newpair.publicKey);  
 
     let [imageUri] = await umi.uploader.upload([genericFile])
-    console.log("image: " + imageUri);
+
+    console.log("ImageUri: " + imageUri);
 
     let uri = await umi.uploader.uploadJson({
       name: selectedHeadline,
@@ -100,29 +89,31 @@ export async function handler(event: any, context: any) {
       image: imageUri,
     });
 
-    let meta = findMetadataPda(umi, { mint: mint.publicKey})
+    console.log("Uri: " + uri);
 
- let ix = await createNft(umi, {
-  mint: mint,
-  name: selectedHeadline,
-  uri: uri,
-  sellerFeeBasisPoints: percentAmount(5.5),
-  payer: noop,
-  authority: umi.identity,
-    collection: {
-      key: publicKey("457A4L3Np9pp9SoDgvJ2EGprfXnjWBHMvrynjtCdUGWY"),
-      verified: false,
-    },
-  })
+    let meta = findMetadataPda(umi, { mint: mint.publicKey});
 
-  .add(verifyCollectionV1(umi, {
-    metadata: meta,
-    collectionMint: publicKey("457A4L3Np9pp9SoDgvJ2EGprfXnjWBHMvrynjtCdUGWY"),
-    authority: umi.identity,
-  }))
-  .setFeePayer(noop)
-  .buildWithLatestBlockhash(umi);
+    console.log("Meta: " + meta);
 
+    let ix = await createNft(umi, {
+      mint: mint,
+      name: selectedHeadline,
+      uri: uri,
+      sellerFeeBasisPoints: percentAmount(5.5),
+      payer: noop,
+      authority: umi.identity,
+        collection: {
+          key: publicKey("457A4L3Np9pp9SoDgvJ2EGprfXnjWBHMvrynjtCdUGWY"),
+          verified: false,
+        },
+      })
+      .add(verifyCollectionV1(umi, {
+        metadata: meta,
+        collectionMint: publicKey("457A4L3Np9pp9SoDgvJ2EGprfXnjWBHMvrynjtCdUGWY"),
+        authority: umi.identity,
+      }))
+      .setFeePayer(noop)
+      .buildWithLatestBlockhash(umi);
 
       let backTx = await umi.identity.signTransaction(ix);
       backTx = await mint.signTransaction(backTx);  

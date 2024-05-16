@@ -174,8 +174,8 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
       const currentPrompt = prompts[currentPromptIndex];
       console.log(currentPrompt);
       
-      const hfApi = process.env.hfApi;
-      const hfApiEndpoint = process.env.HF_API_ENDPOINT;
+      const hfApi = "Bearer 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";
+      const hfApiEndpoint = "https://api-inference.huggingface.co/models/prompthero/openjourney";
 
       if (hfApi && hfApiEndpoint) {
         const response = await fetch(
