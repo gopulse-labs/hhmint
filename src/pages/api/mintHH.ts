@@ -103,15 +103,15 @@ export async function handler(event: any, context: any) {
       sellerFeeBasisPoints: percentAmount(5.5),
       payer: noop,
         collection: {
-          key: publicKey("457A4L3Np9pp9SoDgvJ2EGprfXnjWBHMvrynjtCdUGWY"),
+          key: publicKey("bTScLTgqYYXVhYUxBxLg9iKhFGgmBoNF8YywAXjH3uW"),
           verified: false,
         },
       })
-      // .add(verifyCollectionV1(umi, {
-      //   metadata: meta,
-      //   collectionMint: publicKey("457A4L3Np9pp9SoDgvJ2EGprfXnjWBHMvrynjtCdUGWY"),
-      //   authority: umi.identity,
-      // }))
+      .add(verifyCollectionV1(umi, {
+        metadata: meta,
+        collectionMint: publicKey("bTScLTgqYYXVhYUxBxLg9iKhFGgmBoNF8YywAXjH3uW"),
+        authority: umi.identity,
+      }))
       .setFeePayer(noop)
       .buildWithLatestBlockhash(umi);
 
