@@ -228,31 +228,50 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     }
   }
 
-  async function handleMint(image: string, selectedHeadline: string, selectedStyle: string) {
+  async function handleMint(imageFile: any, selectedHeadline: string, selectedStyle: string) {
     console.log("Start mint process...");
-    
+
     try {
-      const response = await axios.post('https://headlineharmonies.netlify.app/.netlify/functions/mintHH', {
-        image: image,
-        selectedHeadline: selectedHeadline,
-        selectedStyle: selectedStyle
-      });
-      if (response.status === 200) {
-        console.log('Minting successful: ', response.data.serialized);
-        const arr: unknown[] = Object.values(response.data.serialized); // Example array of numbers
-        const uint8Array = new Uint8Array(arr.map(num => Number(num)));
-        const deserialized = umi.transactions.deserialize(uint8Array);
-        await umi.identity.signTransaction(deserialized)
-        await umi.rpc.sendTransaction(deserialized)
-      } else {
-        console.error('Unexpected response status: ', response.status);
-        return null;
-      }
+        const reader = new FileReader();
+        
+        reader.onloadend = async () => {
+            const result = reader.result as string;
+            if (result) {
+                const base64Image = result.split(',')[1]; // Get Base64 part
+
+                const response = await axios.post('https://headlineharmonies.netlify.app/.netlify/functions/mintHH', {
+                    image: base64Image,
+                    selectedHeadline: selectedHeadline,
+                    selectedStyle: selectedStyle
+                });
+
+                if (response.status === 200) {
+                    console.log('Minting successful: ', response.data.serialized);
+                    const arr = Object.values(response.data.serialized); // Example array of numbers
+                    const uint8Array = new Uint8Array(arr.map(num => Number(num)));
+                    const deserialized = umi.transactions.deserialize(uint8Array);
+                    await umi.identity.signTransaction(deserialized);
+                    await umi.rpc.sendTransaction(deserialized);
+                } else {
+                    console.error('Unexpected response status: ', response.status);
+                    return null;
+                }
+            } else {
+                console.error('Error reading image file.');
+            }
+        };
+
+        reader.onerror = (error) => {
+            console.error('Error reading file: ', error);
+        };
+
+        reader.readAsDataURL(imageFile);
     } catch (error) {
-      console.error('Error calling mint function: ', error);
-      return null;
+        console.error('Error calling mint function: ', error);
+        return null;
     }
 }
+
 
 
     // toast({
