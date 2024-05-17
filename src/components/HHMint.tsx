@@ -54,13 +54,6 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
 
   const toast = useToast();
 
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (files && files[0]) {
-      setImageFile(files[0]);
-    }
-  };
-
   async function getPrice() {
     try {
       const response = await axios.get('https://headlineharmonies.netlify.app/.netlify/functions/getPrice', {
@@ -178,13 +171,13 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     try {
       setImageSrc(null);
       setLoading(true);
-
+  
       const currentPrompt = prompts[currentPromptIndex];
       console.log(currentPrompt);
       
       const hfApi = "Bearer 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";
       const hfApiEndpoint = "https://api-inference.huggingface.co/models/prompthero/openjourney";
-
+  
       if (hfApi && hfApiEndpoint) {
         const response = await fetch(
           hfApiEndpoint,
@@ -194,7 +187,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
             body: JSON.stringify({ inputs: currentPrompt }),
           }
         );
-
+  
         currentPromptIndex++;
         console.log(currentPromptIndex);
         
@@ -210,11 +203,15 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
         const blob = await response.blob();
         const realData = await blob.arrayBuffer();
         setRealData(realData);
-
+  
         const base64Data = btoa(String.fromCharCode(...new Uint8Array(realData)));
         const dataUrl = `data:image/jpeg;base64,${base64Data}`;
         setLoading(false);
         setImageSrc(dataUrl);
+  
+        // Create a File object from the generated image data
+        const file = new File([realData], 'generated_image.jpg', { type: 'image/jpeg' });
+        setImageFile(file);
       } else {
         console.error('Hugging Face API environment variable is not defined.');
       }
@@ -222,6 +219,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
       console.error('Error fetching data:', error);
     }
   }
+  
 
   function generateSpecialLink() {
     if (publicKey) {
