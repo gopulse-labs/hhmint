@@ -9,6 +9,9 @@ import { Keypair } from '@solana/web3.js';
 import bs58 from 'bs58';
 import { fromWeb3JsKeypair } from '@metaplex-foundation/umi-web3js-adapters';
 
+//run final check for headline and style combo
+//run final check so that minted image matches image from generateImage()
+
 interface GenericFileTag {
     // Define your GenericFileTag properties here
     name: string;
@@ -47,11 +50,12 @@ export async function handler(event: any, context: any) {
   try {
     console.log("Start backend mint process...");
 
-    console.log(": " + event.body.selectedHeadline);
+    console.log("Event Body: " + event.body);
 
+    const { selectedHeadline, selectedStyle, image } = JSON.parse(event.body);
 
     const genericFile = createGenericFile(
-        event.body.image,
+        image,
         'example.jpg', // Replace with your actual file name
         'Example File', // Replace with your actual display name
         'unique-identifier', // Replace with your actual unique name
@@ -85,8 +89,8 @@ export async function handler(event: any, context: any) {
     console.log("ImageUri: " + imageUri);
 
     let uri = await umi.uploader.uploadJson({
-      name: event.body.selectedHeadline,
-      description: '"' + event.body.selectedHeadline + '"' + " in the " + event.body.selectedStyle + " style.",
+      name: selectedHeadline,
+      description: '"' + selectedHeadline + '"' + " in the " + selectedStyle + " style.",
       image: imageUri,
     });
 
@@ -98,7 +102,7 @@ export async function handler(event: any, context: any) {
 
     let ix = await createNft(umi, {
       mint: mint,
-      name: event.body.selectedHeadline,
+      name: selectedHeadline,
       uri: uri,
       sellerFeeBasisPoints: percentAmount(5.5),
       payer: noop,
