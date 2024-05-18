@@ -18,10 +18,15 @@ import 'text-encoding';
 import { PublicKey, Keypair } from '@solana/web3.js';
 import bs58 from 'bs58';
 import { fromWeb3JsKeypair } from '@metaplex-foundation/umi-web3js-adapters';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTwitter, faTelegram, faLinkedin, faGithub } from '@fortawesome/free-brands-svg-icons';
+import { library } from '@fortawesome/fontawesome-svg-core';
 
 const rpcNode = process.env.rpcNode;
 let currentPromptIndex = 0;
 let umi: Umi;
+
+library.add(faTwitter, faTelegram, faLinkedin, faGithub);
 
 if (rpcNode) {
   umi = createUmi(rpcNode)
@@ -331,7 +336,22 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
       ) : (
         <Text>No wallet found. Please download a supported Solana wallet</Text>
       )}
+      
       <footer>Presented by GoPulse Labs</footer>
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+        <a href="https://x.com/thomasfdevito" target="_blank" rel="noopener noreferrer">
+          <FontAwesomeIcon icon={faTwitter} style={{ margin: '0 10px', fontSize: '24px' }} />
+        </a>
+        <a href="https://telegram.com" target="_blank" rel="noopener noreferrer">
+          <FontAwesomeIcon icon={faTelegram} style={{ margin: '0 10px', fontSize: '24px' }} />
+        </a>
+        <a href="https://www.linkedin.com/in/tdevito" target="_blank" rel="noopener noreferrer">
+          <FontAwesomeIcon icon={faLinkedin} style={{ margin: '0 10px', fontSize: '24px' }} />
+        </a>
+        <a href="https://github.com/gopulse-labs" target="_blank" rel="noopener noreferrer">
+          <FontAwesomeIcon icon={faGithub} style={{ margin: '0 10px', fontSize: '24px' }} />
+        </a>
+      </div>
     </Stack>
   ) : (
     
@@ -541,6 +561,20 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     )}
 
     <footer>Presented by GoPulse Labs</footer>
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+        <a href="https://x.com/thomasfdevito" target="_blank" rel="noopener noreferrer">
+          <FontAwesomeIcon icon={faTwitter} style={{ margin: '0 10px', fontSize: '24px' }} />
+        </a>
+        <a href="https://telegram.com" target="_blank" rel="noopener noreferrer">
+          <FontAwesomeIcon icon={faTelegram} style={{ margin: '0 10px', fontSize: '24px' }} />
+        </a>
+        <a href="https://www.linkedin.com/in/tdevito" target="_blank" rel="noopener noreferrer">
+          <FontAwesomeIcon icon={faLinkedin} style={{ margin: '0 10px', fontSize: '24px' }} />
+        </a>
+        <a href="https://github.com/gopulse-labs" target="_blank" rel="noopener noreferrer">
+          <FontAwesomeIcon icon={faGithub} style={{ margin: '0 10px', fontSize: '24px' }} />
+        </a>
+      </div>
     <br />
     </Stack>
   );
