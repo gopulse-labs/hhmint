@@ -1,6 +1,6 @@
 export const gridButtonsData = [
-  { label: 'Impressionist', imageUrl: 'src/public/images/impressionism.jpg', id: 'impressionist' },
-  { label: 'Art Deco', imageUrl: 'public/images/art-deco.avif', id: 'art-deco' },
+  { label: 'Impressionist', imageUrl: '/images/impressionism.jpg', id: 'impressionist' },
+  { label: 'Art Deco', imageUrl: '/images/art-deco.avif', id: 'art-deco' },
   { label: 'Abstract Expressionist', imageUrl: '/images/abstract-expressionism.jpeg', id: 'abstract-expressionist' },
   { label: 'Fauvist', imageUrl: '/images/fauvism.jpeg', id: 'fauvist' },
   { label: 'Romantic', imageUrl: '/images/romanticism.jpg', id: 'romantic' },
@@ -24,7 +24,7 @@ export const gridButtonsData = [
   { label: 'Minimalist', imageUrl: '/images/minimalism.webp', id: 'minimalist' },
   { label: 'Baroque', imageUrl: '/images/baroque.jpg', id: 'baroque' },
   { label: 'Pointillist', imageUrl: '/images/pointillism.jpg', id: 'pointillist' },
-  { label: 'Pencil Drawing', imageUrl: '/images/pencil-drawing.jpg', id: 'pencil-drawing' },
-  { label: 'Graffiti', imageUrl: '/images/graffiti-art.jpg', id: 'graffiti' },
+  { label: 'Pencil Drawing', imageUrl: '/images/pencil.jpeg', id: 'pencil-drawing' },
+  { label: 'Graffiti', imageUrl: '/images/graffiti.jpeg', id: 'graffiti' },
   { label: 'Symbolist', imageUrl: '/images/symbolism.jpg', id: 'symbolist' }
 ];
