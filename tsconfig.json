@@ -20,6 +20,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "include": ["api/**/*", "pages/**/*", "components/**/*"],
   "exclude": ["node_modules"]
 }

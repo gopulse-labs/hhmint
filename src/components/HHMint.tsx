@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { VStack, Stack, Button, Image, Text, Grid, GridItem,
+import { VStack, Stack, Button, Text, Grid, GridItem, Image,
   Accordion, AccordionItem, AccordionButton,AccordionPanel,
   AccordionIcon, useMediaQuery, Container, Box, Alert,
   AlertIcon, AlertTitle, AlertDescription, Toast, useToast } from "@chakra-ui/react";
@@ -7,7 +7,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { GenericFile, TransactionBuilderItemsInput, Umi, 
   generateSigner, percentAmount, signerIdentity, sol, transactionBuilder, createSignerFromKeypair } from '@metaplex-foundation/umi';
-import { createNft, fetchAllDigitalAssetByVerifiedCollection, fetchDigitalAsset, mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata';
+import { createNft, fetchAllDigitalAssetByUpdateAuthority, fetchAllDigitalAssetByVerifiedCollection, fetchDigitalAsset, mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata';
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { bundlrUploader } from "@metaplex-foundation/umi-uploader-bundlr";
 import { transferSol } from "@metaplex-foundation/mpl-toolbox";
@@ -17,10 +17,24 @@ import parseString from 'xml2js';
 import 'text-encoding';
 import { PublicKey, Keypair } from '@solana/web3.js';
 import bs58 from 'bs58';
-import { fromWeb3JsKeypair } from '@metaplex-foundation/umi-web3js-adapters';
+import { fromWeb3JsKeypair, fromWeb3JsPublicKey, toWeb3JsPublicKey } from '@metaplex-foundation/umi-web3js-adapters';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTwitter, faTelegram, faLinkedin, faGithub } from '@fortawesome/free-brands-svg-icons';
 import { library } from '@fortawesome/fontawesome-svg-core';
+
+//TODO: configure environment variables
+
+//TODO: move front end logic to generate image to serveless function
+
+//TODO: use openai api to score headline for pricing during image generation function on vercel and create jwt token
+
+//TODO: check scoring token against passed in score during mint process
+
+//TODO: create jwt token for headlines array returned rss feed within getNews serverless function 
+//to cross check that the user chosen headline passed into generateImage serverless function
+//is part of the array of headlines from rss feed
+
+//TODO: cross check jwt token again to be sure that no false data can be passed to mintHH function
 
 const rpcNode = process.env.rpcNode;
 let currentPromptIndex = 0;
@@ -54,24 +68,77 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   const [showAlert, setShowAlert] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
+  const [isTooltipVisible, setTooltipVisible] = useState(false);
+
+  const showTooltip = () => setTooltipVisible(true);
+  const hideTooltip = () => setTooltipVisible(false);
+
+  const tooltipStyles: React.CSSProperties = {
+    visibility: isTooltipVisible ? 'visible' : 'hidden',
+    width: '300px',
+    backgroundColor: '#f9f9f9',
+    color: '#333',
+    textAlign: 'left',
+    borderRadius: '5px',
+    padding: '10px',
+    position: 'absolute',
+    zIndex: 1,
+    bottom: '125%',
+    left: '50%',
+    marginLeft: '-150px',
+    opacity: isTooltipVisible ? 1 : 0,
+    transition: 'opacity 0.3s',
+    boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)',
+    maxHeight: '200px', // Limit the height of the tooltip
+    overflowY: 'auto' // Add scroll for overflow
+  };
+
+  const arrowStyles: React.CSSProperties = {
+    content: '""',
+    position: 'absolute',
+    top: '100%',
+    left: '50%',
+    marginLeft: '-5px',
+    borderWidth: '5px',
+    borderStyle: 'solid',
+    borderColor: '#f9f9f9 transparent transparent transparent'
+  };
+
+  const infoIconStyles: React.CSSProperties = {
+    position: 'relative',
+    display: 'inline-block',
+    cursor: 'pointer',
+    color: '#007bff',
+    fontSize: '16px', // Smaller font size for the icon
+    width: '24px',
+    height: '24px',
+    borderRadius: '50%', // Make the icon circular
+    backgroundColor: '#e0e0e0', // Background color for the circle
+    
+    alignItems: 'center',
+    justifyContent: 'center',
+    textAlign: 'center',
+    lineHeight: '24px'
+  };
+
+  const textStyles: React.CSSProperties = {
+    fontSize: '14px' // Adjust font size for the tooltip content
+  };
+
+
   const wallet = useWallet();
   umi.use(walletAdapterIdentity(wallet));
 
   const toast = useToast();
 
-  async function getPrice() {
+  async function fetchAssets() {
     try {
-      const response = await axios.get('https://headlineharmonies.netlify.app/.netlify/functions/getPrice', {
-        params: {
-          salesLastSixHours: 77,
-          salesPreviousSixHours: 22
-        }
-      });
-      const price = parseFloat(response.data);
-      console.log(price)
-      setPrice(1);
+      const owner = new PublicKey("DMteCYezdd8Pzhk7LpMF9fGcKBfiqA5kzmPguiZhENDe");
+      let newKey = fromWeb3JsPublicKey(owner);
+      const assets = await fetchAllDigitalAssetByUpdateAuthority(umi, newKey);
+      console.log("Collection: " + assets);
     } catch (error) {
-      console.error('Error fetching price:', error);
+      console.error('Error fetching assets:', error);
     }
   }
 
@@ -79,19 +146,20 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     if (userPublicKey) {
       console.log('Referral Key: ', userPublicKey);
     }
+    fetchAssets();
     fetchHeadline();
-    getPrice();
   }, [userPublicKey]);
 
-  async function fetchHeadline() {  
+  async function fetchHeadline() {
     try {
-        const response = await axios.get('https://headlineharmonies.netlify.app/.netlify/functions/getNews'); // Use relative URL to call the server-side API route
-        const headlines = response.data.headlines || [];
-        setNews(headlines);
+      const response = await axios.get('/api/getNews');
+      
+      setNews(response.data.headlines);
     } catch (error) {
         console.error('Error fetching news:', error);
     }
-  }
+}
+
 
   function handleStyleClick(style: string, id: string) {
     setSelectedStyle(style);
@@ -111,49 +179,49 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     document.getElementById(`headline-button-${index}`)?.classList.add('selected');
 
     // Call queryHeadlines for the selected headline
-    const scores = await queryHeadlines([headline]).then((response) => {
-      // Extracting the score using regular expression
-      const regex = /(\d+\.\d+)/; // Match any number with decimal
-      const match = response[0][0].generated_text.match(regex); // Assuming the response structure is consistent
+  //   const scores = await queryHeadlines([headline]).then((response) => {
+  //     // Extracting the score using regular expression
+  //     const regex = /(\d+\.\d+)/; // Match any number with decimal
+  //     const match = response[0][0].generated_text.match(regex); // Assuming the response structure is consistent
   
-      if (match) {
-          const score = parseFloat(match[0]);
-          console.log(score);
-      } else {
-          console.error('Score not found in the response');
-      }
-  });
-    console.log('Scores for the selected headline:', scores);
+  //     if (match) {
+  //         const score = parseFloat(match[0]);
+  //         console.log(score);
+  //     } else {
+  //         console.error('Score not found in the response');
+  //     }
+  // });
+  //   console.log('Scores for the selected headline:', scores);
 }
 
 
-  async function queryHeadlines(news: string[]) {
-  const hfApi = process.env.hfApi;
-  const scores = [];
+//   async function queryHeadlines(news: string[]) {
+//   const hfApi = process.env.hfApi;
+//   const scores = [];
 
-  if (hfApi) {
-      for (const headline of news) {
-        const data = {
-          "inputs": "Score the historical significance of the following news headline from 0.01 to 0.99: " + headline + ". Return just the number, absolutely no text",
-      };
-        console.log(data)
-          const response = await fetch(
-              "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
-              {
-                  headers: { 
-                  "Content-Type": "application/json",
-                  Authorization: hfApi },
-                  method: "POST",
-                  body: JSON.stringify(data),
-              }
-          );
-          const result = await response.json();
-          scores.push(result);
-      }
-  }
+//   if (hfApi) {
+//       for (const headline of news) {
+//         const data = {
+//           "inputs": "Score the historical significance of the following news headline from 0.01 to 0.99: " + headline + ". Return just the number, absolutely no text",
+//       };
+//         console.log(data)
+//           const response = await fetch(
+//               "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
+//               {
+//                   headers: { 
+//                   "Content-Type": "application/json",
+//                   Authorization: hfApi },
+//                   method: "POST",
+//                   body: JSON.stringify(data),
+//               }
+//           );
+//           const result = await response.json();
+//           scores.push(result);
+//       }
+//   }
 
-  return scores;
-}
+//   return scores;
+// }
 
   useEffect(() => {
     console.log(selectedStyle);
@@ -247,11 +315,12 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
         const result = reader.result as string;
         if (result) {
           const base64Image = result.split(',')[1]; // Get Base64 part
-          const response = await axios.post('https://headlineharmonies.netlify.app/.netlify/functions/mintHH', {
+          const response = await axios.post('/api/mintHH', {
             image: base64Image,
             selectedHeadline: selectedHeadline,
             selectedStyle: selectedStyle
           });
+          
 
           if (response.status === 200) {
             console.log('Minting successful: ', response.data.serialized);
@@ -278,16 +347,14 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
       console.error('Error calling mint function: ', error);
       return null;
     }
+    toast({
+      title: 'Your HeadlineHarmonies NFT is being minted!',
+      description: 'As an owner of the collection you are now entitled to earn a 20% commission on all NFTs minted using your referral link.',
+      status: 'success',
+      duration: 15000,
+      isClosable: true,
+      position: 'top', });
   };
-
-    // toast({
-    //   title: 'Your HeadlineHarmonies NFT is being minted!',
-    //   description: 'As an owner of the collection you are now entitled to earn a 20% commission on all NFTs minted using your referral link.',
-    //   status: 'success',
-    //   duration: 15000,
-    //   isClosable: true,
-    //   position: 'top', 
-  
 
   return !publicKey ? (
     
@@ -337,21 +404,36 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
         <Text>No wallet found. Please download a supported Solana wallet</Text>
       )}
       
-      <footer>Presented by GoPulse Labs</footer>
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
-        <a href="https://x.com/thomasfdevito" target="_blank" rel="noopener noreferrer">
-          <FontAwesomeIcon icon={faTwitter} style={{ margin: '0 10px', fontSize: '24px' }} />
-        </a>
-        <a href="https://telegram.com" target="_blank" rel="noopener noreferrer">
-          <FontAwesomeIcon icon={faTelegram} style={{ margin: '0 10px', fontSize: '24px' }} />
-        </a>
-        <a href="https://www.linkedin.com/in/tdevito" target="_blank" rel="noopener noreferrer">
-          <FontAwesomeIcon icon={faLinkedin} style={{ margin: '0 10px', fontSize: '24px' }} />
-        </a>
-        <a href="https://github.com/gopulse-labs" target="_blank" rel="noopener noreferrer">
-          <FontAwesomeIcon icon={faGithub} style={{ margin: '0 10px', fontSize: '24px' }} />
-        </a>
-      </div>
+      <footer style={{ textAlign: 'center', paddingTop: '20px' }}>
+  <p style={{ marginBottom: '2px', fontWeight: 'bold', fontSize: '1rem', background: 'linear-gradient(to right, #9945FF, #14F195)', WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent' }}>HeadlineHarmonies</p>
+  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2px' }}>
+    <a href="https://x.com/thomasfdevito" target="_blank" rel="noopener noreferrer">
+      <FontAwesomeIcon icon={faTwitter} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
+    </a>
+    <a href="https://github.com/gopulse-labs/hhmint" target="_blank" rel="noopener noreferrer">
+      <FontAwesomeIcon icon={faGithub} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
+    </a>
+  </div>
+  <p style={{ marginTop: '20px', fontWeight: 'bold', fontSize: '1rem', background: 'linear-gradient(to right, #9945FF, #14F195)', WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent' }}>Presented by Thomas DeVito</p>
+  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2px' }}>
+    <a href="https://x.com/thomasfdevito" target="_blank" rel="noopener noreferrer">
+      <FontAwesomeIcon icon={faTwitter} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
+    </a>
+    <a href="https://telegram.com" target="_blank" rel="noopener noreferrer">
+      <FontAwesomeIcon icon={faTelegram} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
+    </a>
+    <a href="https://www.linkedin.com/in/tdevito" target="_blank" rel="noopener noreferrer">
+      <FontAwesomeIcon icon={faLinkedin} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
+    </a>
+    <a href="https://github.com/tommyd2377" target="_blank" rel="noopener noreferrer">
+      <FontAwesomeIcon icon={faGithub} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
+    </a>
+  </div>
+</footer>
+
+    
     </Stack>
   ) : (
     
@@ -504,7 +586,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     </h2>
     <AccordionPanel pb={4}>
     <div>
-    {[selectedHeadline, selectedStyle] && <Text>Interpretation of &quot;{selectedHeadline}&quot; inspired by the {selectedStyle} style.</Text>}
+    {[selectedHeadline, selectedStyle] && <Text>An interpretation of &quot;{selectedHeadline}&quot; inspired by the {selectedStyle} style.</Text>}
     <Button onClick={() => generateImage(selectedStyle)} bgGradient="linear(to-r, #9945FF, #14F195)">Generate Image</Button>
     <Box>
     {loading && <p>Creating image, this will take a second...</p>}
@@ -532,7 +614,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
       </AccordionButton>
     </h2>
     <AccordionPanel pb={4}>
-    {[selectedHeadline, selectedStyle] && <Text>Interpretation of &quot;{selectedHeadline}&quot; inspired by the {selectedStyle} style.</Text>}
+    {[selectedHeadline, selectedStyle] && <Text>An interpretation of &quot;{selectedHeadline}&quot; inspired by the {selectedStyle} style.</Text>}
     <Box style={{
           display: "flex",
           justifyContent: "center",
@@ -543,6 +625,33 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     </Box>
     <div>
     <Text>{price !== null ? `${price} SOL` : 'Loading...'}</Text>
+    <div style={infoIconStyles} onMouseEnter={showTooltip} onMouseLeave={hideTooltip}>
+      ℹ
+      <div style={tooltipStyles}>
+        <div style={arrowStyles}></div>
+        <strong>Price is based on the average of following scoring criteria:</strong><br /><br />
+        <strong>Global Impact:</strong><br />
+        0.01 to 0.2: Minor local interest (e.g., local events, minor news).<br />
+        0.21 to 0.5: Significant national interest (e.g., national sports events, national political news).<br />
+        0.51 to 0.8: Major international interest (e.g., international sporting events, significant political events in large countries).<br />
+        0.81 to 1: Worldwide impact (e.g., global pandemics, world wars, major scientific breakthroughs).<br /><br />
+        <strong>Longevity:</strong><br />
+        0.01 to 0.2: Short-term interest (days to weeks).<br />
+        0.21 to 0.5: Medium-term interest (months to a few years).<br />
+        0.51 to 0.8: Long-term interest (decades).<br />
+        0.81 to 1: Permanent impact (centuries or more).<br /><br />
+        <strong>Cultural Significance:</strong><br />
+        0.01 to 0.2: Minor or niche cultural impact.<br />
+        0.21 to 0.5: Significant cultural impact within a country or region.<br />
+        0.51 to 0.8: Major cultural impact affecting multiple countries or regions.<br />
+        0.81 to 1: Profound cultural impact, leading to major changes in global culture or history.<br /><br />
+        <strong>Media Coverage:</strong><br />
+        0.01 to 0.2: Limited media coverage.<br />
+        0.21 to 0.5: Moderate media coverage in a few countries.<br />
+        0.51 to 0.8: Extensive media coverage in many countries.<br />
+        0.81 to 1: Intense media coverage globally.
+      </div>
+    </div>
     </div>
     <Button onClick={() => {
   if (imageFile && selectedHeadline && selectedStyle) {
@@ -560,22 +669,35 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
       <Button onClick={generateSpecialLink} bgGradient="linear(to-r, #9945FF, #14F195)">Generate Referral Link</Button>
     )}
 
-    <footer>Presented by GoPulse Labs</footer>
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
-        <a href="https://x.com/thomasfdevito" target="_blank" rel="noopener noreferrer">
-          <FontAwesomeIcon icon={faTwitter} style={{ margin: '0 10px', fontSize: '24px' }} />
-        </a>
-        <a href="https://telegram.com" target="_blank" rel="noopener noreferrer">
-          <FontAwesomeIcon icon={faTelegram} style={{ margin: '0 10px', fontSize: '24px' }} />
-        </a>
-        <a href="https://www.linkedin.com/in/tdevito" target="_blank" rel="noopener noreferrer">
-          <FontAwesomeIcon icon={faLinkedin} style={{ margin: '0 10px', fontSize: '24px' }} />
-        </a>
-        <a href="https://github.com/gopulse-labs" target="_blank" rel="noopener noreferrer">
-          <FontAwesomeIcon icon={faGithub} style={{ margin: '0 10px', fontSize: '24px' }} />
-        </a>
-      </div>
-    <br />
+<footer style={{ textAlign: 'center', paddingTop: '20px' }}>
+  <p style={{ marginBottom: '2px', fontWeight: 'bold', fontSize: '1rem', background: 'linear-gradient(to right, #9945FF, #14F195)', WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent' }}>HeadlineHarmonies</p>
+  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2px' }}>
+    <a href="https://x.com/thomasfdevito" target="_blank" rel="noopener noreferrer">
+      <FontAwesomeIcon icon={faTwitter} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
+    </a>
+    <a href="https://github.com/gopulse-labs/hhmint" target="_blank" rel="noopener noreferrer">
+      <FontAwesomeIcon icon={faGithub} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
+    </a>
+  </div>
+  <p style={{ marginTop: '20px', fontWeight: 'bold', fontSize: '1rem', background: 'linear-gradient(to right, #9945FF, #14F195)', WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent' }}>Presented by Thomas DeVito</p>
+  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2px' }}>
+    <a href="https://x.com/thomasfdevito" target="_blank" rel="noopener noreferrer">
+      <FontAwesomeIcon icon={faTwitter} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
+    </a>
+    <a href="https://telegram.com" target="_blank" rel="noopener noreferrer">
+      <FontAwesomeIcon icon={faTelegram} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
+    </a>
+    <a href="https://www.linkedin.com/in/tdevito" target="_blank" rel="noopener noreferrer">
+      <FontAwesomeIcon icon={faLinkedin} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
+    </a>
+    <a href="https://github.com/tommyd2377" target="_blank" rel="noopener noreferrer">
+      <FontAwesomeIcon icon={faGithub} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
+    </a>
+  </div>
+</footer>
+<br />
     </Stack>
   );
 };
