@@ -19,10 +19,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     res.status(200).json({ headlines });
   } catch (error) {
-    console.error('Error fetching news:', error);
-    console.error('Response data:', error.response?.data);
-    console.error('Response status:', error.response?.status);
-    console.error('Response headers:', error.response?.headers);
+    const typedError = error as any; // or CustomError if you define it
+    console.error('Error fetching news:', typedError);
+    console.error('Response data:', typedError.response?.data);
+    console.error('Response status:', typedError.response?.status);
+    console.error('Response headers:', typedError.response?.headers);
 
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');

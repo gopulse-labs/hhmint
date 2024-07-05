@@ -39,7 +39,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     console.log("Start backend mint process...");
 
-    const { selectedHeadline, selectedStyle, image } = req.body;
+    const { selectedHeadline, selectedStyle, image, publicKey, attributes } = req.body;
+
+    if (!selectedHeadline || !selectedStyle || !image || !publicKey || !attributes) {
+      return res.status(400).send('Bad Request: Missing required fields.');
+    }
 
     const maxLength = 32;
     const truncatedHeadline = selectedHeadline.length > maxLength ? selectedHeadline.substring(0, maxLength) : selectedHeadline;
@@ -48,25 +52,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const genericFile = createGenericFile(
       imageBuffer.buffer,
-      'example.jpg', // Replace with your actual file name
-      'Example File', // Replace with your actual display name
-      'unique-identifier', // Replace with your actual unique name
-      'image/jpeg', // Replace with your actual content type
-      'jpg', // Replace with your actual extension
-      [] // Replace with your actual tags
+      'example.jpg',
+      'Example File',
+      'unique-identifier',
+      'image/jpeg',
+      'jpg',
+      []
     );
 
-    const umi = createUmi("https://quiet-empty-theorem.solana-devnet.quiknode.pro/7d57464a8ad6a9c0f5395d099b88e1c820789582/")
+    const SOLANA_RPC_URL = process.env.SOLANA_RPC_URL;
+    const SECRET_KEY = process.env.SECRET_KEY;
+
+    if (!SOLANA_RPC_URL || !SECRET_KEY) {
+      console.error('RPC URL or Secret Key environment variable is not defined.');
+      return res.status(500).send('Internal Server Error');
+    }
+
+    const umi = createUmi(SOLANA_RPC_URL)
       .use(mplTokenMetadata())
       .use(bundlrUploader());
 
-    const mint = generateSigner(umi);
-
     const keypair = Keypair.fromSecretKey(
-      bs58.decode(
-        "33gqSGMNmo9QmzuFiGK4t8jZFmeKgWXiM4jFvQ9zSmJL6RuMupY2hFnsErAhwaQhxe9ZgzSqQBnNYzHq5yphYLrU"
-      )
+      bs58.decode(SECRET_KEY)
     );
+
+    const mint = generateSigner(umi);
 
     let newpair = fromWeb3JsKeypair(keypair);
     const signer = createSignerFromKeypair(umi, newpair);
@@ -78,14 +88,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const uri = await umi.uploader.uploadJson({
       name: truncatedHeadline,
-      description: '"' + selectedHeadline + '"' + " in the " + selectedStyle + " style.",
+      description: "'" + selectedHeadline + "'" + " in the " + selectedStyle + " style.",
       image: imageUri,
-      attributes: [
-        { trait_type: "Global Impact", value: 0.5 },
-        { trait_type: "Longevity", value: 0.5 },
-        { trait_type: "Cultural Significance", value: 0.5 },
-        { trait_type: "Media Coverage", value: 0.5 }
-      ]
+      attributes: attributes,
     });
 
     console.log("Uri: " + uri);
@@ -99,24 +104,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       name: truncatedHeadline,
       uri: uri,
       sellerFeeBasisPoints: percentAmount(5),
-      payer: signer,
+      //payer: signer,
       collection: {
         key: publicKey("bTScLTgqYYXVhYUxBxLg9iKhFGgmBoNF8YywAXjH3uW"),
         verified: false,
       },
-    //   creators: [
-    //     {
-    //       address: publicKey("CreatorPublicKey1"), // Replace with actual creator public key
-    //       share: 20, // Share percentage (0-100)
-    //       verified: true, // Set to true if verified
-    //     },
-    //     {
-    //       address: publicKey("CreatorPublicKey2"), // Replace with actual creator public key
-    //       share: 80, // Share percentage (0-100)
-    //       verified: true, // Set to true if verified
-    //     },
-    //     // Add more creators as needed
-    //   ],
+      creators: [
+        {
+          address: publicKey(publicKey),
+          share: 80,
+          verified: true,
+        },
+        {
+          address: publicKey("DMteCYezdd8Pzhk7LpMF9fGcKBfiqA5kzmPguiZhENDe"),
+          share: 20,
+          verified: true,
+        }
+      ],
     })
       .add(verifyCollectionV1(umi, {
         metadata: meta,
@@ -125,9 +129,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }))
       // .add(transferSol(umi, {
       //     destination: publicKey("bTScLTgqYYXVhYUxBxLg9iKhFGgmBoNF8YywAXjH3uW"),
-      //     amount: sol(1)
+      //     amount: sol(0.01)
       // }))
-      .setFeePayer(signer)
+      //.setFeePayer(signer)
       .buildWithLatestBlockhash(umi);
 
     let backTx = await umi.identity.signTransaction(ix);

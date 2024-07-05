@@ -1,0 +1,309 @@
+[33mcommit a99e422e47cbbe97911bc558af81217c4735901e[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m)[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Fri Jun 21 13:28:36 2024 -0400
+
+    public => src
+
+[33mcommit 51495258c44c418a05a52d069a06139569e815c6[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Fri Jun 21 13:07:03 2024 -0400
+
+    vercel
+
+[33mcommit 5cc5b00668902e49626d2990b23006af4fb6457c[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Sat May 18 11:19:55 2024 -0400
+
+    sm links
+
+[33mcommit 0d3240b12cd88e32436a5071f837150abc75a030[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Fri May 17 12:23:18 2024 -0400
+
+    backend mint test10
+
+[33mcommit c0037384659cf78b89b8dda476c2817f011ebab5[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Fri May 17 12:06:15 2024 -0400
+
+    backend mint test9
+
+[33mcommit 709bba52e7cd46a0e042771313f74b8cec3504ae[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Fri May 17 11:47:21 2024 -0400
+
+    backend mint test8
+
+[33mcommit f3a2d9435adb7deadcac99e959505850c0c0960a[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Fri May 17 11:22:13 2024 -0400
+
+    backend mint test7
+
+[33mcommit 4ab8e27683db670319b900a0919cbe2ddd54f008[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Thu May 16 16:38:14 2024 -0400
+
+    backend mint test6
+
+[33mcommit fb7ea8f9529789bffba9a51689d52fbd7004a709[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Thu May 16 16:30:54 2024 -0400
+
+    backend mint test5
+
+[33mcommit 52baa3ca8a06c17ddaca70109899c0b8911bc470[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Thu May 16 16:23:14 2024 -0400
+
+    backend mint test4
+
+[33mcommit 8b50aa1cd30dc0ebc4a036d80b5b78cecc995290[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Thu May 16 16:14:51 2024 -0400
+
+    backend mint test3
+
+[33mcommit 74ae65bc7d16fb8b33a2ec49c2f7b735a823d7ba[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Thu May 16 16:03:29 2024 -0400
+
+    backend mint test2
+
+[33mcommit 99dda5de4cb26d04ed8ab3f67440d02b6e0e48ac[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Thu May 16 12:40:42 2024 -0400
+
+    backend mint test1
+
+[33mcommit 209eb12ebbd6535bc37e98daacf35e7f3efaa808[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Thu May 16 12:05:36 2024 -0400
+
+    backend mint test
+
+[33mcommit 8eb3ceef1b0e78e179d42a2b1f971231cf82f9d2[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Wed May 8 11:33:00 2024 -0400
+
+    signer err
+
+[33mcommit c5fcbae37e2d928e5018a92de34fa0e34300595d[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Thu May 2 17:59:42 2024 -0400
+
+    resolve npm err7
+
+[33mcommit 93e86664fbbe1e0b1f6754440c772cc7fd900e41[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Thu May 2 17:36:23 2024 -0400
+
+    resolve npm err6
+
+[33mcommit 0b8d3bf271c72da23de3d98b3e7345df6c983314[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Thu May 2 17:32:15 2024 -0400
+
+    resolve npm err5
+
+[33mcommit 1f01ac1f1cf2a2f930ce0f96a89f0339df215fbe[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Thu May 2 13:29:20 2024 -0400
+
+    resolve npm err4
+
+[33mcommit b6799fa2259b3a23e6eabd9fc68e247841714d77[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Thu May 2 13:16:48 2024 -0400
+
+    resolve npm err3
+
+[33mcommit d6d58479a7b312e56393438ddd9f38f5f0536d37[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Thu May 2 13:00:55 2024 -0400
+
+    resolve npm err2
+
+[33mcommit 0d6a70e98850665988ce1366820ea7fb742894ae[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Thu May 2 12:34:56 2024 -0400
+
+    resolve npm err
+
+[33mcommit 7768a39a8dea593a415646822af9e7ed9ab7df77[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Wed May 1 10:43:58 2024 -0400
+
+    npmV1
+
+[33mcommit 7c4dfba15202172fde93eec021cdb5a56a68e7ee[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Wed May 1 10:38:36 2024 -0400
+
+    npmV
+
+[33mcommit ab99f56210a005ec69e8b729c4c0aca850c9a7cd[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Tue Apr 30 14:56:47 2024 -0400
+
+    mintserver
+
+[33mcommit 9c772c242b9cbcbc6b523d7c41c4dbae7313d5ca[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Tue Apr 30 13:28:29 2024 -0400
+
+    mintserver1
+
+[33mcommit ad93ad70e37d374e123329d9dfe457b4bfcab4a7[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Tue Apr 30 13:24:15 2024 -0400
+
+    mint server
+
+[33mcommit d0df396579f3cdc0a6f06a1ebd2e3d25244c68ae[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Tue Apr 23 17:37:29 2024 -0400
+
+    news selected array
+
+[33mcommit 7d2a9f7ac7e941ceebc04e0650b03da8e0b4ee65[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Tue Apr 23 16:41:17 2024 -0400
+
+    news array
+
+[33mcommit 40a0c16699d7aa3bf244fd7b3a7aa1113a976d3f[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Sat Apr 6 10:54:34 2024 -0400
+
+    4/6
+
+[33mcommit fe3adaa941ee8e107b7e4f6b13fb5cd150e6a137[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Sun Mar 24 10:35:06 2024 -0400
+
+    quot
+
+[33mcommit 27c4029d2a401551921149fd4f06c7dd0eb2af0b[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Sun Mar 24 10:27:00 2024 -0400
+
+    generate art
+
+[33mcommit 1519b1180ccbd392a70fb94e69a549a941ced5b3[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Fri Mar 22 10:00:10 2024 -0400
+
+    gradient
+
+[33mcommit fe54363b57df2291c7b876dc2880df6d3c442556[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Fri Mar 15 13:31:46 2024 -0400
+
+    3/15
+
+[33mcommit 69b90ce090c2b9de016501c56f383d21a56ff459[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Tue Mar 5 13:36:22 2024 -0500
+
+    unconnected intro
+
+[33mcommit 44333a584cd023c62d3a12e1e3e3762828c4f7d6[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Mon Mar 4 13:32:41 2024 -0500
+
+    getPrice cors
+
+[33mcommit 55d4227dcaee5fe16b1f64448118faffd70bfb36[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Mon Mar 4 13:25:41 2024 -0500
+
+    news cors
+
+[33mcommit 3b5cedd57b100e2e4220e6b6fb6277e88ea452ae[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Mon Mar 4 13:10:32 2024 -0500
+
+    netlify function test2
+
+[33mcommit 2c5da985f6737a5d5f1983c3a581bb41c7fc322b[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Mon Mar 4 12:52:39 2024 -0500
+
+    setNews()
+
+[33mcommit 5031bae326d7997dba3cd6164fa467df95d2d34a[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Mon Mar 4 12:43:53 2024 -0500
+
+    res.json({ name: 'John Doe' })
+
+[33mcommit 07ef8f21b0a56114b94c7d321337e7a4bba22de9[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Mon Mar 4 12:40:21 2024 -0500
+
+    data>>
+
+[33mcommit 7d6cae4bd8d632eecd1066122a5ed9867dbc8b18[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Mon Mar 4 12:31:26 2024 -0500
+
+    return NextResponse.json
+
+[33mcommit 4115587fa83b3fbcbb802b1aba6ad9b55a771117[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Mon Mar 4 12:25:40 2024 -0500
+
+    res.json({error: 'Internal Server Error'});
+
+[33mcommit a12124ca0f326fa5cde0862af6c2f6249d124354[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Mon Mar 4 12:22:03 2024 -0500
+
+    res.json({headline: modifiedHeadline})
+
+[33mcommit a1924b70c8cacf07a4b4cc79b3976a8965395ea4[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Mon Mar 4 12:15:45 2024 -0500
+
+    es.send(modifiedHeadline)1
+
+[33mcommit ad39e636c14d6985eb52289066914dec650ec751[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Mon Mar 4 12:12:37 2024 -0500
+
+    return Response.json({ name: 'John Doe' })
+
+[33mcommit 861c1c264c7fcf867624409260d791db457a1e9f[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Mon Mar 4 11:59:41 2024 -0500
+
+    res.json({ modifiedHeadline })1
+
+[33mcommit 887bb37df3dd75730e8a22703fb62c42c8823b18[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Mon Mar 4 11:54:21 2024 -0500
+
+    res.json({ modifiedHeadline })
+
+[33mcommit 4b9c1120604805ff0cdfa8b15422e72e8a9155fb[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Mon Mar 4 11:37:32 2024 -0500
+
+    res.send()1
+
+[33mcommit ff0ffccd61641faff7b17272651bfe2560573821[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Mon Mar 4 11:34:44 2024 -0500
+
+    res.send()
+
+[33mcommit 4433461078af81d633c46105ab277b0cbff752c0[m
+Author: Tom DeVito <tdevito@icloud.com>
+Date:   Mon Mar 4 11:28:28 2024 -0500
+
+    getNews server parse
+
+[33mcommit 0294253a19ebdb46b98cc6250e5dacd9edfc6578[m
+Author: Tom DeVito <tdevito@icloud.com>
+Dat

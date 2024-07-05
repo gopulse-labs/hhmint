@@ -7,9 +7,9 @@ module.exports = nextConfig
 
 module.exports = {
   env: {
-    rpcNode: process.env.RPC,
+    solanaRpcUrl: process.env.SOLANA_RPC_URL,
     hfApi: process.env.HF_API,
     hfApiEndpoint: process.env.HF_API_ENDPOINT,
+    secretKey: process.env.SECRET_KEY
   },
 };
-

@@ -1,0 +1,5 @@
+echo 'https://quiet-empty-theorem.solana-devnet.quiknode.pro/7d57464a8ad6a9c0f5395d099b88e1c820789582/==>REMOVED' > replace.txt
+echo 'Bearer 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==>REMOVED' >> replace.txt
+echo 'https://api-inference.huggingface.co/models/prompthero/openjourney==>REMOVED' >> replace.txt
+echo '33gqSGMNmo9QmzuFiGK4t8jZFmeKgWXiM4jFvQ9zSmJL6RuMupY2hFnsErAhwaQhxe9ZgzSqQBnNYzHq5yphYLrU==>REMOVED' >> replace.txt
+echo 'https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en==>REMOVED' >> replace.txt

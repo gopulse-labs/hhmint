@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { VStack, Stack, Button, Text, Grid, GridItem, Image,
   Accordion, AccordionItem, AccordionButton,AccordionPanel,
   AccordionIcon, useMediaQuery, Container, Box, Alert,
-  AlertIcon, AlertTitle, AlertDescription, Toast, useToast } from "@chakra-ui/react";
+  AlertIcon, AlertTitle, AlertDescription, Toast, useToast, Tooltip } from "@chakra-ui/react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { GenericFile, TransactionBuilderItemsInput, Umi, 
@@ -20,6 +20,7 @@ import bs58 from 'bs58';
 import { fromWeb3JsKeypair, fromWeb3JsPublicKey, toWeb3JsPublicKey } from '@metaplex-foundation/umi-web3js-adapters';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTwitter, faTelegram, faLinkedin, faGithub } from '@fortawesome/free-brands-svg-icons';
+import { InfoIcon } from '@chakra-ui/icons';
 import { library } from '@fortawesome/fontawesome-svg-core';
 
 //TODO: configure environment variables
@@ -36,14 +37,18 @@ import { library } from '@fortawesome/fontawesome-svg-core';
 
 //TODO: cross check jwt token again to be sure that no false data can be passed to mintHH function
 
-const rpcNode = process.env.rpcNode;
+//TODO: fetch asset data to disable minted headline and style cominations, then confirm again during minting
+
+const solanaRpcUrl = process.env.solanaRpcUrl;
+const hfApi = process.env.hfApi;
+const hfApiEndpoint = process.env.hfApiEndpoint;
 let currentPromptIndex = 0;
 let umi: Umi;
 
 library.add(faTwitter, faTelegram, faLinkedin, faGithub);
 
-if (rpcNode) {
-  umi = createUmi(rpcNode)
+if (solanaRpcUrl) {
+  umi = createUmi(solanaRpcUrl)
   .use(mplTokenMetadata())
   .use(bundlrUploader());
 } else {
@@ -89,8 +94,8 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     opacity: isTooltipVisible ? 1 : 0,
     transition: 'opacity 0.3s',
     boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)',
-    maxHeight: '200px', // Limit the height of the tooltip
-    overflowY: 'auto' // Add scroll for overflow
+    maxHeight: '200px',
+    overflowY: 'auto'
   };
 
   const arrowStyles: React.CSSProperties = {
@@ -109,11 +114,11 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     display: 'inline-block',
     cursor: 'pointer',
     color: '#007bff',
-    fontSize: '16px', // Smaller font size for the icon
+    fontSize: '16px',
     width: '24px',
     height: '24px',
-    borderRadius: '50%', // Make the icon circular
-    backgroundColor: '#e0e0e0', // Background color for the circle
+    borderRadius: '50%',
+    backgroundColor: '#e0e0e0',
     
     alignItems: 'center',
     justifyContent: 'center',
@@ -122,9 +127,8 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   };
 
   const textStyles: React.CSSProperties = {
-    fontSize: '14px' // Adjust font size for the tooltip content
+    fontSize: '14px'
   };
-
 
   const wallet = useWallet();
   umi.use(walletAdapterIdentity(wallet));
@@ -158,8 +162,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     } catch (error) {
         console.error('Error fetching news:', error);
     }
-}
-
+  }
 
   function handleStyleClick(style: string, id: string) {
     setSelectedStyle(style);
@@ -172,56 +175,12 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   }
 
   async function handleHeadlineClick(headline: string, index: number) {
-    setSelectedHeadline(headline); // Assuming setSelectedHeadline sets the selected headline state
+    setSelectedHeadline(headline);
     document.querySelectorAll('.headline-button').forEach((button) => {
         button.classList.remove('selected');
     });
     document.getElementById(`headline-button-${index}`)?.classList.add('selected');
-
-    // Call queryHeadlines for the selected headline
-  //   const scores = await queryHeadlines([headline]).then((response) => {
-  //     // Extracting the score using regular expression
-  //     const regex = /(\d+\.\d+)/; // Match any number with decimal
-  //     const match = response[0][0].generated_text.match(regex); // Assuming the response structure is consistent
-  
-  //     if (match) {
-  //         const score = parseFloat(match[0]);
-  //         console.log(score);
-  //     } else {
-  //         console.error('Score not found in the response');
-  //     }
-  // });
-  //   console.log('Scores for the selected headline:', scores);
-}
-
-
-//   async function queryHeadlines(news: string[]) {
-//   const hfApi = process.env.hfApi;
-//   const scores = [];
-
-//   if (hfApi) {
-//       for (const headline of news) {
-//         const data = {
-//           "inputs": "Score the historical significance of the following news headline from 0.01 to 0.99: " + headline + ". Return just the number, absolutely no text",
-//       };
-//         console.log(data)
-//           const response = await fetch(
-//               "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
-//               {
-//                   headers: { 
-//                   "Content-Type": "application/json",
-//                   Authorization: hfApi },
-//                   method: "POST",
-//                   body: JSON.stringify(data),
-//               }
-//           );
-//           const result = await response.json();
-//           scores.push(result);
-//       }
-//   }
-
-//   return scores;
-// }
+  }
 
   useEffect(() => {
     console.log(selectedStyle);
@@ -248,9 +207,6 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
       const currentPrompt = prompts[currentPromptIndex];
       console.log(currentPrompt);
       
-      const hfApi = "Bearer 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";
-      const hfApiEndpoint = "https://api-inference.huggingface.co/models/prompthero/openjourney";
-  
       if (hfApi && hfApiEndpoint) {
         const response = await fetch(
           hfApiEndpoint,
@@ -282,7 +238,6 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
         setLoading(false);
         setImageSrc(dataUrl);
   
-        // Create a File object from the generated image data
         const file = new File([realData], 'generated_image.jpg', { type: 'image/jpeg' });
         setImageFile(file);
       } else {
@@ -307,26 +262,35 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     }
   }
 
-  const handleMint = async (imageFile: File, selectedHeadline: string, selectedStyle: string) => {
+  const handleMint = async (imageFile: File, selectedHeadline: string, selectedStyle: string, publicKey: PublicKey) => {
     console.log('Start mint process...');
     try {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const result = reader.result as string;
         if (result) {
-          const base64Image = result.split(',')[1]; // Get Base64 part
+          const base64Image = result.split(',')[1];
           const response = await axios.post('/api/mintHH', {
             image: base64Image,
             selectedHeadline: selectedHeadline,
-            selectedStyle: selectedStyle
+            selectedStyle: selectedStyle,
+            publicKey: publicKey.toBase58(),
+            attributes: [
+              { trait_type: "Global Impact", value: 0.5 },
+              { trait_type: "Longevity", value: 0.5 },
+              { trait_type: "Cultural Significance", value: 0.5 },
+              { trait_type: "Media Coverage", value: 0.5 }
+            ] 
           });
           
 
           if (response.status === 200) {
             console.log('Minting successful: ', response.data.serialized);
-            const arr = Object.values(response.data.serialized) as unknown[]; // Example array of numbers
+            const arr = Object.values(response.data.serialized) as unknown[];
             const uint8Array = new Uint8Array(arr.map(num => Number(num)));
             const deserialized = umi.transactions.deserialize(uint8Array);
+
+
             await umi.identity.signTransaction(deserialized);
             await umi.rpc.sendTransaction(deserialized);
           } else {
@@ -342,7 +306,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
         console.error('Error reading file: ', error);
       };
 
-      reader.readAsDataURL(imageFile); // Ensure imageFile is of type File or Blob
+      reader.readAsDataURL(imageFile);
     } catch (error) {
       console.error('Error calling mint function: ', error);
       return null;
@@ -438,16 +402,23 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   ) : (
     
     <Stack gap={4} align="center">
- 
-      <Text
-        style={{
-          maxWidth: '80%',
-          wordWrap: 'break-word',
-          textAlign: 'center',
-        }}
+    <Box
+             maxW={['90%', '80%', 'md']}
+             mx='auto'
+             p={[2, 4]}
+        borderWidth={1}
+        borderRadius="md"
+        boxShadow="lg"
       >
-        {publicKey.toBase58()}
-      </Text>
+        <Text
+          maxW="80%"
+          mx="auto"
+          textAlign="center"
+          wordBreak="break-word"
+        >
+          {publicKey.toBase58()}
+        </Text>
+      </Box>
 
       <Button onClick={disconnect} bgGradient="linear(to-r, #9945FF, #14F195)">Disconnect Wallet</Button>
 
@@ -514,7 +485,6 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
                       py={2}
                     >
                       <Text
-                        // Allow text to wrap to multiple lines
             style={{ whiteSpace: 'normal', wordWrap: 'break-word' }}
             textAlign="center"
                       >{headline}</Text>
@@ -531,7 +501,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
               <Box>
                 Style
               </Box>
-              {/* <AccordionIcon /> */}
+  
             </AccordionButton>
           </h2>
           <AccordionPanel pb={4}>
@@ -564,7 +534,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
                       }
                 }
               >
-              <Image paddingTop="5px" src={button.imageUrl} alt={`Image ${index}`} boxSize="100px" />
+              <Image paddingTop="5px" src={button.imageUrl} alt={`Image ${index}`} boxSize="100px" objectFit="cover" />
               <Text>{button.label}</Text>
             </Button>
 
@@ -581,13 +551,34 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
         <Box>
           Generate
         </Box>
-        {/* <AccordionIcon /> */}
+
       </AccordionButton>
     </h2>
     <AccordionPanel pb={4}>
     <div>
-    {[selectedHeadline, selectedStyle] && <Text>An interpretation of &quot;{selectedHeadline}&quot; inspired by the {selectedStyle} style.</Text>}
+    <Box
+        maxW="md"
+        mx="auto"
+
+        p={4}
+        borderWidth={1}
+        borderRadius="md"
+        boxShadow="lg"
+      >
+        <Text
+          maxW="80%"
+          mx="auto"
+          textAlign="center"
+          wordBreak="break-word"
+        >
+{selectedHeadline && selectedStyle && (
+  <Text>An interpretation of &apos;{selectedHeadline}&apos; inspired by the {selectedStyle} style.</Text>
+)}
+        </Text>
+      </Box>
+      <Box padding={3}>
     <Button onClick={() => generateImage(selectedStyle)} bgGradient="linear(to-r, #9945FF, #14F195)">Generate Image</Button>
+    </Box>
     <Box>
     {loading && <p>Creating image, this will take a second...</p>}
     </Box>
@@ -610,11 +601,30 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
         <Box>
           Mint
         </Box>
-        {/* <AccordionIcon /> */}
+  
       </AccordionButton>
     </h2>
     <AccordionPanel pb={4}>
-    {[selectedHeadline, selectedStyle] && <Text>An interpretation of &quot;{selectedHeadline}&quot; inspired by the {selectedStyle} style.</Text>}
+    <Box
+        maxW="md"
+        mx="auto"
+
+        p={4}
+        borderWidth={1}
+        borderRadius="md"
+        boxShadow="lg"
+      >
+        <Text
+          maxW="80%"
+          mx="auto"
+          textAlign="center"
+          wordBreak="break-word"
+        >
+{selectedHeadline && selectedStyle && (
+  <Text>An interpretation of &apos;{selectedHeadline}&apos; inspired by the {selectedStyle} style.</Text>
+)}
+        </Text>
+      </Box>
     <Box style={{
           display: "flex",
           justifyContent: "center",
@@ -624,38 +634,72 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     {imageSrc && <Image src={imageSrc} alt="Generated Image" />}
     </Box>
     <div>
-    <Text>{price !== null ? `${price} SOL` : 'Loading...'}</Text>
-    <div style={infoIconStyles} onMouseEnter={showTooltip} onMouseLeave={hideTooltip}>
-      ℹ
-      <div style={tooltipStyles}>
-        <div style={arrowStyles}></div>
-        <strong>Price is based on the average of following scoring criteria:</strong><br /><br />
-        <strong>Global Impact:</strong><br />
-        0.01 to 0.2: Minor local interest (e.g., local events, minor news).<br />
-        0.21 to 0.5: Significant national interest (e.g., national sports events, national political news).<br />
-        0.51 to 0.8: Major international interest (e.g., international sporting events, significant political events in large countries).<br />
-        0.81 to 1: Worldwide impact (e.g., global pandemics, world wars, major scientific breakthroughs).<br /><br />
-        <strong>Longevity:</strong><br />
-        0.01 to 0.2: Short-term interest (days to weeks).<br />
-        0.21 to 0.5: Medium-term interest (months to a few years).<br />
-        0.51 to 0.8: Long-term interest (decades).<br />
-        0.81 to 1: Permanent impact (centuries or more).<br /><br />
-        <strong>Cultural Significance:</strong><br />
-        0.01 to 0.2: Minor or niche cultural impact.<br />
-        0.21 to 0.5: Significant cultural impact within a country or region.<br />
-        0.51 to 0.8: Major cultural impact affecting multiple countries or regions.<br />
-        0.81 to 1: Profound cultural impact, leading to major changes in global culture or history.<br /><br />
-        <strong>Media Coverage:</strong><br />
-        0.01 to 0.2: Limited media coverage.<br />
-        0.21 to 0.5: Moderate media coverage in a few countries.<br />
-        0.51 to 0.8: Extensive media coverage in many countries.<br />
-        0.81 to 1: Intense media coverage globally.
-      </div>
-    </div>
+    <Text>{price !== null ? `${price} SOL` : 'Loading Price...'}</Text>
+    <Tooltip
+    label={
+      <Box style= {tooltipStyles}>
+        <Box mb={2}>
+          <strong>Attribute Scoring:</strong>
+        </Box>
+        <Box>
+          <strong>Global Impact:</strong>
+          <br />
+          0.01 to 0.2: Minor local interest (e.g., local events, minor news).
+          <br />
+          0.21 to 0.5: Significant national interest (e.g., national sports events, national political news).
+          <br />
+          0.51 to 0.8: Major international interest (e.g., international sporting events, significant political events in large countries).
+          <br />
+          0.81 to 1: Worldwide impact (e.g., global pandemics, world wars, major scientific breakthroughs).
+          <br />
+        </Box>
+        <Box mt={2}>
+          <strong>Longevity:</strong>
+          <br />
+          0.01 to 0.2: Short-term interest (days to weeks).
+          <br />
+          0.21 to 0.5: Medium-term interest (months to a few years).
+          <br />
+          0.51 to 0.8: Long-term interest (decades).
+          <br />
+          0.81 to 1: Permanent impact (centuries or more).
+          <br />
+        </Box>
+        <Box mt={2}>
+          <strong>Cultural Significance:</strong>
+          <br />
+          0.01 to 0.2: Minor or niche cultural impact.
+          <br />
+          0.21 to 0.5: Significant cultural impact within a country or region.
+          <br />
+          0.51 to 0.8: Major cultural impact affecting multiple countries or regions.
+          <br />
+          0.81 to 1: Profound cultural impact, leading to major changes in global culture or history.
+          <br />
+        </Box>
+        <Box mt={2}>
+          <strong>Media Coverage:</strong>
+          <br />
+          0.01 to 0.2: Limited media coverage.
+          <br />
+          0.21 to 0.5: Moderate media coverage in a few countries.
+          <br />
+          0.51 to 0.8: Extensive media coverage in many countries.
+          <br />
+          0.81 to 1: Intense media coverage globally.
+        </Box>
+      </Box>
+    }
+    aria-label="Price scoring criteria"
+    hasArrow
+    placement="right"
+  >
+    <InfoIcon ml={2} cursor="pointer" />
+  </Tooltip>
     </div>
     <Button onClick={() => {
   if (imageFile && selectedHeadline && selectedStyle) {
-    handleMint(imageFile, selectedHeadline, selectedStyle);
+    handleMint(imageFile, selectedHeadline, selectedStyle, publicKey);
   } else {
     console.error("ImageSrc is null");
   }
