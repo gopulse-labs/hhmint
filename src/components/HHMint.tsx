@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { VStack, Stack, Button, Text, Grid, GridItem, Image,
   Accordion, AccordionItem, AccordionButton,AccordionPanel,
   AccordionIcon, useMediaQuery, Container, Box, Alert,
-  AlertIcon, AlertTitle, AlertDescription, Toast, useToast, Tooltip } from "@chakra-ui/react";
+  AlertIcon, AlertTitle, AlertDescription, Toast, useToast, Tooltip, IconButton, useDisclosure, } from "@chakra-ui/react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { GenericFile, TransactionBuilderItemsInput, Umi, 
@@ -22,6 +22,13 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTwitter, faTelegram, faLinkedin, faGithub } from '@fortawesome/free-brands-svg-icons';
 import { InfoIcon } from '@chakra-ui/icons';
 import { library } from '@fortawesome/fontawesome-svg-core';
+import fs from "node:fs";
+import FormData from "form-data";
+import OpenAI from "openai";
+
+
+
+
 
 //TODO: configure environment variables
 
@@ -40,6 +47,10 @@ import { library } from '@fortawesome/fontawesome-svg-core';
 //TODO: fetch asset data to disable minted headline and style cominations, then confirm again during minting
 
 const solanaRpcUrl = process.env.solanaRpcUrl;
+const openai = new OpenAI({
+  apiKey: process.env.openAI, 
+  dangerouslyAllowBrowser: true });
+
 const hfApi = process.env.hfApi;
 const hfApiEndpoint = process.env.hfApiEndpoint;
 let currentPromptIndex = 0;
@@ -72,6 +83,10 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   const [isOwner, setIsOwner] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
+
+  const [isTouchDevice] = useMediaQuery("(hover: none) and (pointer: coarse)");
+
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   const [isTooltipVisible, setTooltipVisible] = useState(false);
 
@@ -135,22 +150,22 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
 
   const toast = useToast();
 
-  async function fetchAssets() {
-    try {
-      const owner = new PublicKey("DMteCYezdd8Pzhk7LpMF9fGcKBfiqA5kzmPguiZhENDe");
-      let newKey = fromWeb3JsPublicKey(owner);
-      const assets = await fetchAllDigitalAssetByUpdateAuthority(umi, newKey);
-      console.log("Collection: " + assets);
-    } catch (error) {
-      console.error('Error fetching assets:', error);
-    }
-  }
+  // async function fetchAssets() {
+  //   try {
+  //     const owner = new PublicKey("DMteCYezdd8Pzhk7LpMF9fGcKBfiqA5kzmPguiZhENDe");
+  //     let newKey = fromWeb3JsPublicKey(owner);
+  //     const assets = await fetchAllDigitalAssetByUpdateAuthority(umi, newKey);
+  //     console.log("Collection: " + assets);
+  //   } catch (error) {
+  //     console.error('Error fetching assets:', error);
+  //   }
+  // }
 
   useEffect(() => {
     if (userPublicKey) {
       console.log('Referral Key: ', userPublicKey);
     }
-    fetchAssets();
+    //fetchAssets();
     fetchHeadline();
   }, [userPublicKey]);
 
@@ -199,55 +214,107 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     "Sculpt an expressive artwork, embodying the stylistic nuances of " + selectedStyle + ", to capture the essence of the headline: " + '"' + selectedHeadline + '"'
   ];
 
-  async function generateImage(selectedStyle: string | null) {
-    try {
-      setImageSrc(null);
-      setLoading(true);
-  
-      const currentPrompt = prompts[currentPromptIndex];
-      console.log(currentPrompt);
-      
-      if (hfApi && hfApiEndpoint) {
-        const response = await fetch(
-          hfApiEndpoint,
-          {
-            headers: { Authorization: hfApi },
-            method: "POST",
-            body: JSON.stringify({ inputs: currentPrompt }),
-          }
-        );
-  
-        currentPromptIndex++;
-        console.log(currentPromptIndex);
-        
-        if (currentPromptIndex === prompts.length) {
-          currentPromptIndex = 0;
-        }
-        
-        if (!response.ok) {
-          setLoading(false);
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-      
-        const blob = await response.blob();
-        const realData = await blob.arrayBuffer();
-        setRealData(realData);
-  
-        const base64Data = btoa(String.fromCharCode(...new Uint8Array(realData)));
-        const dataUrl = `data:image/jpeg;base64,${base64Data}`;
-        setLoading(false);
-        setImageSrc(dataUrl);
-  
-        const file = new File([realData], 'generated_image.jpg', { type: 'image/jpeg' });
-        setImageFile(file);
-      } else {
-        console.error('Hugging Face API environment variable is not defined.');
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
+  function arrayBufferToBase64(buffer: Iterable<number>) {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
     }
+    return window.btoa(binary);
+}
+
+async function generateImage(selectedStyle: string | null) {
+  try {
+    setImageSrc(null);
+    setLoading(true);
+
+    const currentPrompt = prompts[currentPromptIndex];
+    console.log(currentPrompt);
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+          { role: "system", content: `Please provide a detailed analysis of the following news headline. Each category should be scored on a precise scale from 
+            0.01 to 0.99, reflecting subtle differences in impact and significance based on the event's details and implications. Ensure that each score 
+            truly captures the gradation of impact, significance, and anticipated coverage, avoiding rounding to general values unless absolutely fitting. Evaluate 
+            each aspect carefully and justify each score with specific reasons drawn from the event's characteristics.”
+
+          Scoring Guidelines:
+
+            •	Global Impact: Score from 0.01 to 0.99, where 0.01 represents minimal impact and 0.99 indicates a profound global effect.
+            Consider factors like international relations, global markets, and worldwide public health.
+            •	Longevity: Score from 0.01 to 0.99, assessing how long the effects of the event will last. A score closer to 
+            0.01 suggests transient effects, whereas 0.99 suggests changes or consequences enduring over generations.
+            •	Cultural Significance: Evaluate how deeply the event influences cultural values, societal norms, and artistic
+            expressions across different regions, scoring minutely to reflect the extent and depth of cultural penetration.
+            •	Media Coverage: Assign a score based on the extent, depth, and duration of anticipated media attention across the globe.
+            Detailed considerations should include the diversity of reporting sources, the sustained interest over time, and the intensity of the coverage.` },
+          {
+              role: "user",
+              content: selectedHeadline || "No headline provided",
+          },
+      ],
+  });
+
+  
+
+  let openAiResponse = completion.choices[0].message.content;
+
+if (openAiResponse !== null) {
+    console.log(openAiResponse);
+    const scores = extractScores(openAiResponse);
+    console.log(scores);
+
+    calculateAndSetAveragePrice(scores);
+} else {
+    console.error("Received null content from OpenAI completion.");
+}
+  
+  
+if (hfApi && hfApiEndpoint) {
+  const response = await fetch(
+    hfApiEndpoint,
+    {
+      headers: { Authorization: hfApi },
+      method: "POST",
+      body: JSON.stringify({ inputs: currentPrompt }),
+    }
+  );
+
+  currentPromptIndex++;
+  console.log(currentPromptIndex);
+  
+  if (currentPromptIndex === prompts.length) {
+    currentPromptIndex = 0;
   }
   
+  if (!response.ok) {
+    setLoading(false);
+    throw new Error(`HTTP error! Status: ${response.status}`);
+  }
+
+
+  const realData = await response.arrayBuffer();
+
+  // Create a Blob from the ArrayBuffer
+  const blob = new Blob([realData], { type: 'image/png' }); // Adjust MIME type as needed
+
+  // Create an object URL for the Blob
+  const imageUrl = URL.createObjectURL(blob);
+  setLoading(false);
+  setImageSrc(imageUrl);
+
+  // Create a File object if needed
+  const file = new File([blob], 'generated_image.png', { type: 'image/png' });
+  setImageFile(file);
+} else {
+  console.error('Hugging Face API environment variable is not defined.');
+}
+} catch (error) {
+console.error('Error fetching data:', error);
+}
+}
 
   function generateSpecialLink() {
     if (publicKey) {
@@ -262,7 +329,58 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     }
   }
 
-  const handleMint = async (imageFile: File, selectedHeadline: string, selectedStyle: string, publicKey: PublicKey) => {
+  interface Scores {
+    globalImpact: number;
+    longevity: number;
+    culturalSignificance: number;
+    mediaCoverage: number;
+}
+
+let scores: Scores
+
+function extractScores(responseText: string): Scores {
+  const regexPatterns = {
+      globalImpact: /Global Impact:\s*(\d+\.\d+)/,
+      longevity: /Longevity:\s*(\d+\.\d+)/,
+      culturalSignificance: /Cultural Significance:\s*(\d+\.\d+)/,
+      mediaCoverage: /Media Coverage:\s*(\d+\.\d+)/
+  };
+
+  let scores: Scores = {
+      globalImpact: 0,
+      longevity: 0,
+      culturalSignificance: 0,
+      mediaCoverage: 0
+  };
+
+  // Iterate over each score type and attempt to find matches
+  for (const [key, regex] of Object.entries(regexPatterns)) {
+      const match = responseText.match(regex);
+      if (match && match[1]) {
+          scores[key as keyof Scores] = parseFloat(match[1]);  // Safely indexing using keyof Scores
+      } else {
+          console.error(`No match found for ${key}.`);
+      }
+  }
+
+  return scores;
+}
+
+const calculateAndSetAveragePrice = (scores: Scores) => {
+  const { globalImpact, longevity, culturalSignificance, mediaCoverage } = scores;
+  const average = (globalImpact + longevity + culturalSignificance + mediaCoverage) / 4;
+
+  // Set the average as the new price
+  setPrice(average);
+};
+
+
+  const handleMint = async (imageFile: File, selectedHeadline: string, selectedStyle: string, publicKey: PublicKey, scores: {
+    globalImpact: number,
+    longevity: number,
+    culturalSignificance: number,
+    mediaCoverage: number
+}) => {
     console.log('Start mint process...');
     try {
       const reader = new FileReader();
@@ -276,10 +394,10 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
             selectedStyle: selectedStyle,
             publicKey: publicKey.toBase58(),
             attributes: [
-              { trait_type: "Global Impact", value: 0.5 },
-              { trait_type: "Longevity", value: 0.5 },
-              { trait_type: "Cultural Significance", value: 0.5 },
-              { trait_type: "Media Coverage", value: 0.5 }
+              { trait_type: "Global Impact", value: scores.globalImpact },
+              { trait_type: "Longevity", value: scores.longevity },
+              { trait_type: "Cultural Significance", value: scores.culturalSignificance },
+              { trait_type: "Media Coverage", value: scores.mediaCoverage }
             ] 
           });
           
@@ -634,72 +752,59 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     {imageSrc && <Image src={imageSrc} alt="Generated Image" />}
     </Box>
     <div>
-    <Text>{price !== null ? `${price} SOL` : 'Loading Price...'}</Text>
+    <Text>{price !== null ? `${price.toFixed(2)} SOL` : 'Loading Price...'}</Text>
     <Tooltip
-    label={
-      <Box style= {tooltipStyles}>
-        <Box mb={2}>
-          <strong>Attribute Scoring:</strong>
-        </Box>
-        <Box>
-          <strong>Global Impact:</strong>
-          <br />
-          0.01 to 0.2: Minor local interest (e.g., local events, minor news).
-          <br />
-          0.21 to 0.5: Significant national interest (e.g., national sports events, national political news).
-          <br />
-          0.51 to 0.8: Major international interest (e.g., international sporting events, significant political events in large countries).
-          <br />
-          0.81 to 1: Worldwide impact (e.g., global pandemics, world wars, major scientific breakthroughs).
-          <br />
-        </Box>
-        <Box mt={2}>
-          <strong>Longevity:</strong>
-          <br />
-          0.01 to 0.2: Short-term interest (days to weeks).
-          <br />
-          0.21 to 0.5: Medium-term interest (months to a few years).
-          <br />
-          0.51 to 0.8: Long-term interest (decades).
-          <br />
-          0.81 to 1: Permanent impact (centuries or more).
-          <br />
-        </Box>
-        <Box mt={2}>
-          <strong>Cultural Significance:</strong>
-          <br />
-          0.01 to 0.2: Minor or niche cultural impact.
-          <br />
-          0.21 to 0.5: Significant cultural impact within a country or region.
-          <br />
-          0.51 to 0.8: Major cultural impact affecting multiple countries or regions.
-          <br />
-          0.81 to 1: Profound cultural impact, leading to major changes in global culture or history.
-          <br />
-        </Box>
-        <Box mt={2}>
-          <strong>Media Coverage:</strong>
-          <br />
-          0.01 to 0.2: Limited media coverage.
-          <br />
-          0.21 to 0.5: Moderate media coverage in a few countries.
-          <br />
-          0.51 to 0.8: Extensive media coverage in many countries.
-          <br />
-          0.81 to 1: Intense media coverage globally.
-        </Box>
-      </Box>
-    }
-    aria-label="Price scoring criteria"
-    hasArrow
-    placement="right"
-  >
-    <InfoIcon ml={2} cursor="pointer" />
-  </Tooltip>
+      label={
+        <VStack spacing={1} p={4} align="start" bg="white" shadow="md" borderColor="gray.200">
+          <Text fontWeight="bold">Attribute Scoring:</Text>
+          <VStack align="start">
+            <Text><strong>Global Impact:</strong></Text>
+            <Text>0.01 to 0.2: Minor local interest (e.g., local events, minor news).</Text>
+            <Text>0.21 to 0.5: Significant national interest (e.g., national sports events, national political news).</Text>
+            <Text>0.51 to 0.8: Major international interest (e.g., international sporting events, significant political events in large countries).</Text>
+            <Text>0.81 to 1: Worldwide impact (e.g., global pandemics, world wars, major scientific breakthroughs).</Text>
+          </VStack>
+          <VStack align="start" mt={2}>
+            <Text><strong>Longevity:</strong></Text>
+            <Text>0.01 to 0.2: Short-term interest (days to weeks).</Text>
+            <Text>0.21 to 0.5: Medium-term interest (months to a few years).</Text>
+            <Text>0.51 to 0.8: Long-term interest (decades).</Text>
+            <Text>0.81 to 1: Permanent impact (centuries or more).</Text>
+          </VStack>
+          <VStack align="start" mt={2}>
+            <Text><strong>Cultural Significance:</strong></Text>
+            <Text>0.01 to 0.2: Minor or niche cultural impact.</Text>
+            <Text>0.21 to 0.5: Significant cultural impact within a country or region.</Text>
+            <Text>0.51 to 0.8: Major cultural impact affecting multiple countries or regions.</Text>
+            <Text>0.81 to 1: Profound cultural impact, leading to major changes in global culture or history.</Text>
+          </VStack>
+          <VStack align="start" mt={2}>
+            <Text><strong>Media Coverage:</strong></Text>
+            <Text>0.01 to 0.2: Limited media coverage.</Text>
+            <Text>0.21 to 0.5: Moderate media coverage in a few countries.</Text>
+            <Text>0.51 to 0.8: Extensive media coverage in many countries.</Text>
+            <Text>0.81 to 1: Intense media coverage globally.</Text>
+          </VStack>
+        </VStack>
+      }
+      aria-label="Price scoring criteria"
+      hasArrow
+      placement="auto"
+      closeOnClick={true}
+      shouldWrapChildren
+    >
+      <IconButton
+        aria-label="Info"
+        icon={<InfoIcon />}
+        onClick={isOpen ? onClose : onOpen}
+        variant="ghost"
+        size="lg"
+      />
+    </Tooltip>
     </div>
     <Button onClick={() => {
   if (imageFile && selectedHeadline && selectedStyle) {
-    handleMint(imageFile, selectedHeadline, selectedStyle, publicKey);
+    handleMint(imageFile, selectedHeadline, selectedStyle, publicKey, scores);
   } else {
     console.error("ImageSrc is null");
   }
