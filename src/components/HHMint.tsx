@@ -6,7 +6,7 @@ import { VStack, Stack, Button, Text, Grid, GridItem, Image,
 import { useWallet } from "@solana/wallet-adapter-react";
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { GenericFile, TransactionBuilderItemsInput, Umi, 
-  generateSigner, percentAmount, signerIdentity, sol, transactionBuilder, createSignerFromKeypair } from '@metaplex-foundation/umi';
+  generateSigner, percentAmount, signerIdentity, sol, transactionBuilder, createSignerFromKeypair, base58 } from '@metaplex-foundation/umi';
 import { createNft, fetchAllDigitalAssetByUpdateAuthority, fetchAllDigitalAssetByVerifiedCollection, fetchDigitalAsset, mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata';
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { bundlrUploader } from "@metaplex-foundation/umi-uploader-bundlr";
@@ -77,6 +77,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [selectedHeadline, setSelectedHeadline] = useState<string | null>(null);
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
+  const [scores1, setScores] = useState<Scores | null>(null);
   const [loading, setLoading] = useState(false);
   const [realData1, setRealData] = useState<ArrayBuffer | null>(null);
   const [price, setPrice] = useState<number | null>(null);
@@ -262,9 +263,10 @@ async function generateImage(selectedStyle: string | null) {
   let openAiResponse = completion.choices[0].message.content;
 
 if (openAiResponse !== null) {
-    console.log(openAiResponse);
-    const scores = extractScores(openAiResponse);
+    //console.log(openAiResponse);
+  const scores = extractScores(openAiResponse);
     console.log(scores);
+
 
     calculateAndSetAveragePrice(scores);
 } else {
@@ -336,8 +338,6 @@ console.error('Error fetching data:', error);
     mediaCoverage: number;
 }
 
-let scores: Scores
-
 function extractScores(responseText: string): Scores {
   const regexPatterns = {
       globalImpact: /Global Impact:\s*(\d+\.\d+)/,
@@ -362,6 +362,7 @@ function extractScores(responseText: string): Scores {
           console.error(`No match found for ${key}.`);
       }
   }
+  setScores(scores)
 
   return scores;
 }
@@ -369,9 +370,10 @@ function extractScores(responseText: string): Scores {
 const calculateAndSetAveragePrice = (scores: Scores) => {
   const { globalImpact, longevity, culturalSignificance, mediaCoverage } = scores;
   const average = (globalImpact + longevity + culturalSignificance + mediaCoverage) / 4;
+  const finalPrice = average * 10;
 
   // Set the average as the new price
-  setPrice(average);
+  setPrice(finalPrice);
 };
 
 
@@ -382,6 +384,7 @@ const calculateAndSetAveragePrice = (scores: Scores) => {
     mediaCoverage: number
 }) => {
     console.log('Start mint process...');
+    console.log("scores:" + scores.globalImpact)
     try {
       const reader = new FileReader();
       reader.onloadend = async () => {
@@ -409,8 +412,9 @@ const calculateAndSetAveragePrice = (scores: Scores) => {
             const deserialized = umi.transactions.deserialize(uint8Array);
 
 
-            await umi.identity.signTransaction(deserialized);
-            await umi.rpc.sendTransaction(deserialized);
+            const signedDeserializedCreateAssetTx = await umi.identity.signTransaction(deserialized);
+            const createAssetSignature = base58.deserialize(await umi.rpc.sendTransaction(signedDeserializedCreateAssetTx))[0]
+            console.log(`\nAsset Created: https://solana.fm/tx/${createAssetSignature}}?cluster=devnet-alpha`);
           } else {
             console.error('Unexpected response status: ', response.status);
             return null;
@@ -431,7 +435,7 @@ const calculateAndSetAveragePrice = (scores: Scores) => {
     }
     toast({
       title: 'Your HeadlineHarmonies NFT is being minted!',
-      description: 'As an owner of the collection you are now entitled to earn a 20% commission on all NFTs minted using your referral link.',
+      description: 'Check your wallet!',
       status: 'success',
       duration: 15000,
       isClosable: true,
@@ -568,7 +572,25 @@ const calculateAndSetAveragePrice = (scores: Scores) => {
           </h2>
 
           <AccordionPanel pb={4}>
+          <Box
+        maxW="md"
+        mx="auto"
+
+        p={4}
+        borderWidth={1}
+        borderRadius="md"
+        boxShadow="lg"
+      >
+        <Text
+          maxW="80%"
+          mx="auto"
+          textAlign="center"
+          wordBreak="break-word"
+        >
           {selectedHeadline && <Text>{selectedHeadline}</Text>}  
+          </Text>
+          </Box>
+          <br />
               <Grid
                 templateColumns={{ base: 'repeat(1, 1fr)', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }}
                 gap={4}
@@ -623,7 +645,24 @@ const calculateAndSetAveragePrice = (scores: Scores) => {
             </AccordionButton>
           </h2>
           <AccordionPanel pb={4}>
+          <Box
+        maxW="md"
+        mx="auto"
+
+        p={4}
+        borderWidth={1}
+        borderRadius="md"
+        boxShadow="lg"
+      >
+        <Text
+          maxW="80%"
+          mx="auto"
+          textAlign="center"
+          wordBreak="break-word"
+        >
           {selectedHeadline && <Text>{selectedHeadline}</Text>}
+          </Text>
+          </Box>
           <Box padding="20px">
       <Grid 
          templateColumns={{ base: "repeat(1, 1fr)", sm: "repeat(2, 1fr)", md: "repeat(4, 1fr)"}} 
@@ -743,6 +782,7 @@ const calculateAndSetAveragePrice = (scores: Scores) => {
 )}
         </Text>
       </Box>
+      <br />
     <Box style={{
           display: "flex",
           justifyContent: "center",
@@ -803,8 +843,8 @@ const calculateAndSetAveragePrice = (scores: Scores) => {
     </Tooltip>
     </div>
     <Button onClick={() => {
-  if (imageFile && selectedHeadline && selectedStyle) {
-    handleMint(imageFile, selectedHeadline, selectedStyle, publicKey, scores);
+  if (imageFile && selectedHeadline && selectedStyle && scores1) {
+    handleMint(imageFile, selectedHeadline, selectedStyle, publicKey, scores1);
   } else {
     console.error("ImageSrc is null");
   }

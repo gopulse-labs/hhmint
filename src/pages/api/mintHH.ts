@@ -1,11 +1,16 @@
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
-import { generateSigner, publicKey, createSignerFromKeypair, keypairIdentity, percentAmount, sol } from '@metaplex-foundation/umi';
+import { generateSigner, publicKey, createSignerFromKeypair, signerIdentity, createNoopSigner, keypairIdentity, percentAmount, sol, Transaction } from '@metaplex-foundation/umi';
 import { createNft, findMetadataPda, mplTokenMetadata, verifyCollectionV1 } from '@metaplex-foundation/mpl-token-metadata';
 import { bundlrUploader } from '@metaplex-foundation/umi-uploader-bundlr';
+import { irysUploader } from '@metaplex-foundation/umi-uploader-irys'
 import bs58 from 'bs58';
 import { Keypair } from '@solana/web3.js';
 import { fromWeb3JsKeypair } from '@metaplex-foundation/umi-web3js-adapters';
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import { create, fetchCollection, ruleSet } from '@metaplex-foundation/mpl-core';
+import { PublicKey } from '@solana/web3.js';
+import { mplCore } from '@metaplex-foundation/mpl-core'
+import { base64 } from '@metaplex-foundation/umi/serializers';
 
 interface GenericFileTag {
   name: string;
@@ -69,18 +74,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const umi = createUmi(SOLANA_RPC_URL)
+    .use(mplCore())
       .use(mplTokenMetadata())
-      .use(bundlrUploader());
+      .use(irysUploader());
 
     const keypair = Keypair.fromSecretKey(
       bs58.decode(SECRET_KEY)
     );
 
-    const mint = generateSigner(umi);
-
     let newpair = fromWeb3JsKeypair(keypair);
-    const signer = createSignerFromKeypair(umi, newpair);
-    umi.use(keypairIdentity(signer));
+    const collectionAuthority = createSignerFromKeypair(umi, newpair);
+    umi.use(signerIdentity(collectionAuthority));
 
     const [imageUri] = await umi.uploader.upload([genericFile]);
 
@@ -95,53 +99,103 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log("Uri: " + uri);
 
-    const meta = findMetadataPda(umi, { mint: mint.publicKey });
+    //const frontendPubkey = publicKey(publicKey)
+    const frontEndSigner = createNoopSigner(publicKey)
+
+    const assetKeypair = generateSigner(umi);
+    const meta = findMetadataPda(umi, { mint: assetKeypair.publicKey });
 
     console.log("Meta: " + meta);
 
-    const ix = await createNft(umi, {
-      mint: mint,
+    const collection = await fetchCollection(umi, "EGe47cdy7jYt7fuMkHanXwZ3BWM1tzGbz8rekHhNbsez");
+
+    console.log("Collection: " + collection);
+
+    // const creator1 = new publicKey(publicKey); // Assuming publicKey is a string or Buffer
+    // const creator2 = new publicKey("DMteCYezdd8Pzhk7LpMF9fGcKBfiqA5kzmPguiZhENDe");
+
+    
+    const ix = await create(umi, {
+      asset: assetKeypair,
+      collection: collection,
       name: truncatedHeadline,
+      authority: collectionAuthority,
+      payer: frontEndSigner,
+      owner: publicKey,
       uri: uri,
-      sellerFeeBasisPoints: percentAmount(5),
-      //payer: signer,
-      collection: {
-        key: publicKey("bTScLTgqYYXVhYUxBxLg9iKhFGgmBoNF8YywAXjH3uW"),
-        verified: false,
-      },
-      creators: [
-        {
-          address: publicKey(publicKey),
-          share: 80,
-          verified: true,
-        },
-        {
-          address: publicKey("DMteCYezdd8Pzhk7LpMF9fGcKBfiqA5kzmPguiZhENDe"),
-          share: 20,
-          verified: true,
-        }
-      ],
+      // plugins: [
+      //   {
+      //     type: 'Royalties',
+      //     basisPoints: 500,
+      //     creators: [
+      //       {
+      //         address: creator1,
+      //         percentage: 80,
+      //       },
+      //       {
+      //         address: creator2,
+      //         percentage: 20,
+      //       },
+      //     ],
+      //     ruleSet: ruleSet('None'),
+      //   },
+      // ],
     })
-      .add(verifyCollectionV1(umi, {
-        metadata: meta,
-        collectionMint: publicKey("bTScLTgqYYXVhYUxBxLg9iKhFGgmBoNF8YywAXjH3uW"),
-        authority: umi.identity,
-      }))
-      // .add(transferSol(umi, {
+    // .add(verifyCollectionV1(umi, {
+    //   metadata: meta,
+    //   collectionMint: publicKey("bTScLTgqYYXVhYUxBxLg9iKhFGgmBoNF8YywAXjH3uW"),
+    //   authority: umi.identity,
+    // }))
+    // .add(transferSol(umi, {
       //     destination: publicKey("bTScLTgqYYXVhYUxBxLg9iKhFGgmBoNF8YywAXjH3uW"),
       //     amount: sol(0.01)
       // }))
       //.setFeePayer(signer)
-      .buildWithLatestBlockhash(umi);
+      .useV0()
+  .setBlockhash(await umi.rpc.getLatestBlockhash())
+  .buildAndSign(umi);
+
+    // const ix = await createNft(umi, {
+    //   mint: mint,
+    //   name: truncatedHeadline,
+    //   uri: uri,
+    //   sellerFeeBasisPoints: percentAmount(5),
+    //   //payer: signer,
+    //   collection: {
+    //     key: publicKey("bTScLTgqYYXVhYUxBxLg9iKhFGgmBoNF8YywAXjH3uW"),
+    //     verified: false,
+    //   },
+    //   creators: [
+    //     {
+    //       address: publicKey(publicKey),
+    //       share: 80,
+    //       verified: true,
+    //     },
+    //     {
+    //       address: publicKey("DMteCYezdd8Pzhk7LpMF9fGcKBfiqA5kzmPguiZhENDe"),
+    //       share: 20,
+    //       verified: true,
+    //     }
+    //   ],
+    // })
+    //   .add(verifyCollectionV1(umi, {
+    //     metadata: meta,
+    //     collectionMint: publicKey("bTScLTgqYYXVhYUxBxLg9iKhFGgmBoNF8YywAXjH3uW"),
+    //     authority: umi.identity,
+    //   }))
+    //   // .add(transferSol(umi, {
+    //   //     destination: publicKey("bTScLTgqYYXVhYUxBxLg9iKhFGgmBoNF8YywAXjH3uW"),
+    //   //     amount: sol(0.01)
+    //   // }))
+    //   //.setFeePayer(signer)
+    //   .buildWithLatestBlockhash(umi);
 
     let backTx = await umi.identity.signTransaction(ix);
-    backTx = await mint.signTransaction(backTx);
+    backTx = await assetKeypair.signTransaction(backTx);
 
     console.log(backTx.signatures);
 
     const serialized = await umi.transactions.serialize(backTx);
-
-    console.log(serialized);
 
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
