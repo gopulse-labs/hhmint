@@ -73,6 +73,8 @@ interface HHMintProps {
 const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   const { select, wallets, publicKey, disconnect } = useWallet();
 
+  const frontEndKey = publicKey;
+
   const [news, setNews] = useState<string[]>([]);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [selectedHeadline, setSelectedHeadline] = useState<string | null>(null);
@@ -88,63 +90,6 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   const [isTouchDevice] = useMediaQuery("(hover: none) and (pointer: coarse)");
 
   const { isOpen, onOpen, onClose } = useDisclosure();
-
-  const [isTooltipVisible, setTooltipVisible] = useState(false);
-
-  const showTooltip = () => setTooltipVisible(true);
-  const hideTooltip = () => setTooltipVisible(false);
-
-  const tooltipStyles: React.CSSProperties = {
-    visibility: isTooltipVisible ? 'visible' : 'hidden',
-    width: '300px',
-    backgroundColor: '#f9f9f9',
-    color: '#333',
-    textAlign: 'left',
-    borderRadius: '5px',
-    padding: '10px',
-    position: 'absolute',
-    zIndex: 1,
-    bottom: '125%',
-    left: '50%',
-    marginLeft: '-150px',
-    opacity: isTooltipVisible ? 1 : 0,
-    transition: 'opacity 0.3s',
-    boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)',
-    maxHeight: '200px',
-    overflowY: 'auto'
-  };
-
-  const arrowStyles: React.CSSProperties = {
-    content: '""',
-    position: 'absolute',
-    top: '100%',
-    left: '50%',
-    marginLeft: '-5px',
-    borderWidth: '5px',
-    borderStyle: 'solid',
-    borderColor: '#f9f9f9 transparent transparent transparent'
-  };
-
-  const infoIconStyles: React.CSSProperties = {
-    position: 'relative',
-    display: 'inline-block',
-    cursor: 'pointer',
-    color: '#007bff',
-    fontSize: '16px',
-    width: '24px',
-    height: '24px',
-    borderRadius: '50%',
-    backgroundColor: '#e0e0e0',
-    
-    alignItems: 'center',
-    justifyContent: 'center',
-    textAlign: 'center',
-    lineHeight: '24px'
-  };
-
-  const textStyles: React.CSSProperties = {
-    fontSize: '14px'
-  };
 
   const wallet = useWallet();
   umi.use(walletAdapterIdentity(wallet));
@@ -376,8 +321,7 @@ const calculateAndSetAveragePrice = (scores: Scores) => {
   setPrice(finalPrice);
 };
 
-
-  const handleMint = async (imageFile: File, selectedHeadline: string, selectedStyle: string, publicKey: PublicKey, scores: {
+  const handleMint = async (imageFile: File, selectedHeadline: string, selectedStyle: string, frontEndKey: PublicKey, scores: {
     globalImpact: number,
     longevity: number,
     culturalSignificance: number,
@@ -395,7 +339,7 @@ const calculateAndSetAveragePrice = (scores: Scores) => {
             image: base64Image,
             selectedHeadline: selectedHeadline,
             selectedStyle: selectedStyle,
-            publicKey: publicKey.toBase58(),
+            frontEndKey: frontEndKey.toBase58(),
             attributes: [
               { trait_type: "Global Impact", value: scores.globalImpact },
               { trait_type: "Longevity", value: scores.longevity },
@@ -843,8 +787,8 @@ const calculateAndSetAveragePrice = (scores: Scores) => {
     </Tooltip>
     </div>
     <Button onClick={() => {
-  if (imageFile && selectedHeadline && selectedStyle && scores1) {
-    handleMint(imageFile, selectedHeadline, selectedStyle, publicKey, scores1);
+  if (imageFile && selectedHeadline && selectedStyle && scores1 && frontEndKey) {
+    handleMint(imageFile, selectedHeadline, selectedStyle, frontEndKey, scores1);
   } else {
     console.error("ImageSrc is null");
   }

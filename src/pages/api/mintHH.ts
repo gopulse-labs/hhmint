@@ -1,7 +1,6 @@
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { generateSigner, publicKey, createSignerFromKeypair, signerIdentity, createNoopSigner, keypairIdentity, percentAmount, sol, Transaction } from '@metaplex-foundation/umi';
 import { createNft, findMetadataPda, mplTokenMetadata, verifyCollectionV1 } from '@metaplex-foundation/mpl-token-metadata';
-import { bundlrUploader } from '@metaplex-foundation/umi-uploader-bundlr';
 import { irysUploader } from '@metaplex-foundation/umi-uploader-irys'
 import bs58 from 'bs58';
 import { Keypair } from '@solana/web3.js';
@@ -44,9 +43,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     console.log("Start backend mint process...");
 
-    const { selectedHeadline, selectedStyle, image, publicKey, attributes } = req.body;
+    //change publicKey argument name
 
-    if (!selectedHeadline || !selectedStyle || !image || !publicKey || !attributes) {
+    const { selectedHeadline, selectedStyle, image, frontEndKey, attributes } = req.body;
+
+    if (!selectedHeadline || !selectedStyle || !image || !frontEndKey || !attributes) {
       return res.status(400).send('Bad Request: Missing required fields.');
     }
 
@@ -76,7 +77,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const umi = createUmi(SOLANA_RPC_URL)
     .use(mplCore())
       .use(mplTokenMetadata())
-      .use(irysUploader());
+      .use(irysUploader({
+        address: "https://devnet.irys.xyz/",
+      }));
 
     const keypair = Keypair.fromSecretKey(
       bs58.decode(SECRET_KEY)
@@ -99,8 +102,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log("Uri: " + uri);
 
-    //const frontendPubkey = publicKey(publicKey)
-    const frontEndSigner = createNoopSigner(publicKey)
+    const frontendPubkey = publicKey(frontEndKey)
+    const frontEndSigner = createNoopSigner(frontEndKey)
 
     const assetKeypair = generateSigner(umi);
     const meta = findMetadataPda(umi, { mint: assetKeypair.publicKey });
@@ -111,9 +114,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log("Collection: " + collection);
 
-    // const creator1 = new publicKey(publicKey); // Assuming publicKey is a string or Buffer
-    // const creator2 = new publicKey("DMteCYezdd8Pzhk7LpMF9fGcKBfiqA5kzmPguiZhENDe");
-
+    const creator1 = publicKey(frontEndKey);
+    const creator2 = publicKey("DMteCYezdd8Pzhk7LpMF9fGcKBfiqA5kzmPguiZhENDe");
     
     const ix = await create(umi, {
       asset: assetKeypair,
@@ -121,25 +123,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       name: truncatedHeadline,
       authority: collectionAuthority,
       payer: frontEndSigner,
-      owner: publicKey,
+      owner: frontendPubkey,
       uri: uri,
-      // plugins: [
-      //   {
-      //     type: 'Royalties',
-      //     basisPoints: 500,
-      //     creators: [
-      //       {
-      //         address: creator1,
-      //         percentage: 80,
-      //       },
-      //       {
-      //         address: creator2,
-      //         percentage: 20,
-      //       },
-      //     ],
-      //     ruleSet: ruleSet('None'),
-      //   },
-      // ],
+      plugins: [
+        {
+          type: 'Royalties',
+          basisPoints: 500,
+          creators: [
+            {
+              address: creator1,
+              percentage: 80,
+            },
+            {
+              address: creator2,
+              percentage: 20,
+            },
+          ],
+          ruleSet: ruleSet('None'),
+        },
+      ],
     })
     // .add(verifyCollectionV1(umi, {
     //   metadata: meta,
