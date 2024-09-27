@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable prefer-const */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import { VStack, Stack, Button, Text, Grid, GridItem, Image,
   Accordion, AccordionItem, AccordionButton,AccordionPanel,
@@ -26,11 +29,9 @@ import fs from "node:fs";
 import FormData from "form-data";
 import OpenAI from "openai";
 
-
-
-
-
 //TODO: configure environment variables
+
+//TODO: show attributes on frontend after image generation
 
 //TODO: move front end logic to generate image to serveless function
 
@@ -44,7 +45,7 @@ import OpenAI from "openai";
 
 //TODO: cross check jwt token again to be sure that no false data can be passed to mintHH function
 
-//TODO: fetch asset data to disable minted headline and style cominations, then confirm again during minting
+//TODO: fetch asset data to disable minted headline and style combinations, then confirm again during minting
 
 const solanaRpcUrl = process.env.solanaRpcUrl;
 const openai = new OpenAI({
@@ -147,120 +148,59 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     console.log(selectedStyle);
   }, [selectedStyle]);
 
-  const prompts = [
-    "Craft a masterpiece, channeling the aesthetic essence of " + selectedStyle + ", to convey the message behind the headline: " + '"' + selectedHeadline + '"',
-    "Design an exquisite piece, drawing inspiration from the visual language of " + selectedStyle + ", to interpret the narrative within the headline: " + '"' + selectedHeadline + '"',
-    "Produce an artistic marvel, embracing the stylistic elements of " + selectedStyle + ", to articulate the story encapsulated in the headline: " + '"' + selectedHeadline + '"',
-    "Create a visual symphony, echoing the design ethos of " + selectedStyle + ", to mirror the essence of the headline: " + '"' + selectedHeadline + '"',
-    "Fashion a captivating artwork, embodying the visual characteristics of " + selectedStyle + ", to depict the essence of the headline: " + '"' + selectedHeadline + '"',
-    "Construct a striking composition, influenced by the aesthetic principles of " + selectedStyle + ", to illuminate the essence of the headline: " + '"' + selectedHeadline + '"',
-    "Shape an evocative piece, drawing from the visual motifs of " + selectedStyle + ", to encapsulate the essence of the headline: " + '"' + selectedHeadline + '"',
-    "Devise a stunning creation, inspired by the visual aesthetics of " + selectedStyle + ", to reflect the narrative conveyed in the headline: " + '"' + selectedHeadline + '"',
-    "Forge an artistic interpretation, mirroring the visual cues of " + selectedStyle + ", to convey the underlying message of the headline: " + '"' + selectedHeadline + '"',
-    "Sculpt an expressive artwork, embodying the stylistic nuances of " + selectedStyle + ", to capture the essence of the headline: " + '"' + selectedHeadline + '"'
-  ];
-
-  function arrayBufferToBase64(buffer: Iterable<number>) {
-    let binary = '';
-    const bytes = new Uint8Array(buffer);
-    const len = bytes.byteLength;
-    for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(bytes[i]);
-    }
-    return window.btoa(binary);
-}
-
-async function generateImage(selectedStyle: string | null) {
+async function generateImage(selectedStyle: any, selectedHeadline: any) {
   try {
-    setImageSrc(null);
     setLoading(true);
+    setImageSrc(null);
+    setScores(null);
+    
+    console.log(selectedHeadline, selectedStyle);
 
-    const currentPrompt = prompts[currentPromptIndex];
-    console.log(currentPrompt);
+    const response = await fetch('/api/generateImage', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ selectedStyle, selectedHeadline })
+    });
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-          { role: "system", content: `Please provide a detailed analysis of the following news headline. Each category should be scored on a precise scale from 
-            0.01 to 0.99, reflecting subtle differences in impact and significance based on the event's details and implications. Ensure that each score 
-            truly captures the gradation of impact, significance, and anticipated coverage, avoiding rounding to general values unless absolutely fitting. Evaluate 
-            each aspect carefully and justify each score with specific reasons drawn from the event's characteristics.”
-
-          Scoring Guidelines:
-
-            •	Global Impact: Score from 0.01 to 0.99, where 0.01 represents minimal impact and 0.99 indicates a profound global effect.
-            Consider factors like international relations, global markets, and worldwide public health.
-            •	Longevity: Score from 0.01 to 0.99, assessing how long the effects of the event will last. A score closer to 
-            0.01 suggests transient effects, whereas 0.99 suggests changes or consequences enduring over generations.
-            •	Cultural Significance: Evaluate how deeply the event influences cultural values, societal norms, and artistic
-            expressions across different regions, scoring minutely to reflect the extent and depth of cultural penetration.
-            •	Media Coverage: Assign a score based on the extent, depth, and duration of anticipated media attention across the globe.
-            Detailed considerations should include the diversity of reporting sources, the sustained interest over time, and the intensity of the coverage.` },
-          {
-              role: "user",
-              content: selectedHeadline || "No headline provided",
-          },
-      ],
-  });
-
-  
-
-  let openAiResponse = completion.choices[0].message.content;
-
-if (openAiResponse !== null) {
-    //console.log(openAiResponse);
-  const scores = extractScores(openAiResponse);
-    console.log(scores);
-
-
-    calculateAndSetAveragePrice(scores);
-} else {
-    console.error("Received null content from OpenAI completion.");
-}
-  
-  
-if (hfApi && hfApiEndpoint) {
-  const response = await fetch(
-    hfApiEndpoint,
-    {
-      headers: { Authorization: hfApi },
-      method: "POST",
-      body: JSON.stringify({ inputs: currentPrompt }),
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
     }
-  );
 
-  currentPromptIndex++;
-  console.log(currentPromptIndex);
-  
-  if (currentPromptIndex === prompts.length) {
-    currentPromptIndex = 0;
-  }
-  
-  if (!response.ok) {
+    const data = await response.json();
+
+    console.log("scores and price: " + data.scores, data.price)
+    setImageSrc(`data:image/png;base64,${data.image}`);
+
+    setScores(data.scores);  // Update scores state
+    setPrice(data.price); 
+
+       // Convert base64 string to a File object
+       const base64Response = data.image.split(';base64,').pop();
+       const byteCharacters = atob(base64Response);
+       const byteArrays = [];
+
+       for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+           const slice = byteCharacters.slice(offset, offset + 512);
+           const byteNumbers = new Array(slice.length);
+           for (let i = 0; i < slice.length; i++) {
+               byteNumbers[i] = slice.charCodeAt(i);
+           }
+           const byteArray = new Uint8Array(byteNumbers);
+           byteArrays.push(byteArray);
+       }
+
+       const blob = new Blob(byteArrays, {type: 'image/png'});
+       const file = new File([blob], 'generated_image.png', { type: 'image/png' });
+
+       setImageFile(file);
+
     setLoading(false);
-    throw new Error(`HTTP error! Status: ${response.status}`);
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    setLoading(false);
   }
-
-
-  const realData = await response.arrayBuffer();
-
-  // Create a Blob from the ArrayBuffer
-  const blob = new Blob([realData], { type: 'image/png' }); // Adjust MIME type as needed
-
-  // Create an object URL for the Blob
-  const imageUrl = URL.createObjectURL(blob);
-  setLoading(false);
-  setImageSrc(imageUrl);
-
-  // Create a File object if needed
-  const file = new File([blob], 'generated_image.png', { type: 'image/png' });
-  setImageFile(file);
-} else {
-  console.error('Hugging Face API environment variable is not defined.');
-}
-} catch (error) {
-console.error('Error fetching data:', error);
-}
 }
 
   function generateSpecialLink() {
@@ -282,44 +222,6 @@ console.error('Error fetching data:', error);
     culturalSignificance: number;
     mediaCoverage: number;
 }
-
-function extractScores(responseText: string): Scores {
-  const regexPatterns = {
-      globalImpact: /Global Impact:\s*(\d+\.\d+)/,
-      longevity: /Longevity:\s*(\d+\.\d+)/,
-      culturalSignificance: /Cultural Significance:\s*(\d+\.\d+)/,
-      mediaCoverage: /Media Coverage:\s*(\d+\.\d+)/
-  };
-
-  let scores: Scores = {
-      globalImpact: 0,
-      longevity: 0,
-      culturalSignificance: 0,
-      mediaCoverage: 0
-  };
-
-  // Iterate over each score type and attempt to find matches
-  for (const [key, regex] of Object.entries(regexPatterns)) {
-      const match = responseText.match(regex);
-      if (match && match[1]) {
-          scores[key as keyof Scores] = parseFloat(match[1]);  // Safely indexing using keyof Scores
-      } else {
-          console.error(`No match found for ${key}.`);
-      }
-  }
-  setScores(scores)
-
-  return scores;
-}
-
-const calculateAndSetAveragePrice = (scores: Scores) => {
-  const { globalImpact, longevity, culturalSignificance, mediaCoverage } = scores;
-  const average = (globalImpact + longevity + culturalSignificance + mediaCoverage) / 4;
-  const finalPrice = average * 10;
-
-  // Set the average as the new price
-  setPrice(finalPrice);
-};
 
   const handleMint = async (imageFile: File, selectedHeadline: string, selectedStyle: string, frontEndKey: PublicKey, scores: {
     globalImpact: number,
@@ -678,7 +580,7 @@ const calculateAndSetAveragePrice = (scores: Scores) => {
         </Text>
       </Box>
       <Box padding={3}>
-    <Button onClick={() => generateImage(selectedStyle)} bgGradient="linear(to-r, #9945FF, #14F195)">Generate Image</Button>
+    <Button onClick={() => generateImage(selectedHeadline, selectedStyle)} bgGradient="linear(to-r, #9945FF, #14F195)">Generate Image</Button>
     </Box>
     <Box>
     {loading && <p>Creating image, this will take a second...</p>}
@@ -692,6 +594,26 @@ const calculateAndSetAveragePrice = (scores: Scores) => {
         }}>
     {imageSrc && <Image src={imageSrc} alt="Generated Image" />}
     </Box>
+    <br />
+    {scores1 && (
+          <Box
+          maxW="md"
+          mx="auto"
+  
+          p={4}
+          borderWidth={1}
+          borderRadius="md"
+          boxShadow="lg"
+        >
+            <Text fontWeight="bold" mb={2}>Attributes:</Text>
+            <Text>Global Impact: {scores1.globalImpact.toFixed(2)}</Text>
+            <Text>Longevity: {scores1.longevity.toFixed(2)}</Text>
+            <Text>Cultural Significance: {scores1.culturalSignificance.toFixed(2)}</Text>
+            <Text>Media Coverage: {scores1.mediaCoverage.toFixed(2)}</Text>
+            {/* <Text fontSize="xl" mt={4} fontWeight="bold">Price: {price.toFixed(2)} SOL</Text> */}
+          </Box>
+        )}
+   
     </div>
     </AccordionPanel>
   </AccordionItem>

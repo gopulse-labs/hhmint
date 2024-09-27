@@ -1,3 +1,5 @@
+/* eslint-disable prefer-const */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { generateSigner, publicKey, createSignerFromKeypair, signerIdentity, createNoopSigner, keypairIdentity, percentAmount, sol, Transaction } from '@metaplex-foundation/umi';
 import { createNft, findMetadataPda, mplTokenMetadata, verifyCollectionV1 } from '@metaplex-foundation/mpl-token-metadata';
