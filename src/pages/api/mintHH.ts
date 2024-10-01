@@ -2,16 +2,16 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { generateSigner, publicKey, createSignerFromKeypair, signerIdentity, createNoopSigner, keypairIdentity, percentAmount, sol, Transaction } from '@metaplex-foundation/umi';
-import { createNft, findMetadataPda, mplTokenMetadata, verifyCollectionV1 } from '@metaplex-foundation/mpl-token-metadata';
+import { findMetadataPda, mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata';
 import { irysUploader } from '@metaplex-foundation/umi-uploader-irys'
 import bs58 from 'bs58';
 import { Keypair } from '@solana/web3.js';
 import { fromWeb3JsKeypair } from '@metaplex-foundation/umi-web3js-adapters';
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { create, fetchCollection, ruleSet } from '@metaplex-foundation/mpl-core';
-import { PublicKey } from '@solana/web3.js';
 import { mplCore } from '@metaplex-foundation/mpl-core'
-import { base64 } from '@metaplex-foundation/umi/serializers';
+import crypto from 'crypto';
+import { transferSol } from '@metaplex-foundation/mpl-toolbox'
 
 interface GenericFileTag {
   name: string;
@@ -41,11 +41,13 @@ function createGenericFile(arrayBuffer: ArrayBuffer, fileName: string, displayNa
   };
 }
 
+function generateHash(input: crypto.BinaryLike) {
+  return crypto.createHash('sha256').update(input).digest('hex');
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     console.log("Start backend mint process...");
-
-    //change publicKey argument name
 
     const { selectedHeadline, selectedStyle, image, frontEndKey, attributes } = req.body;
 
@@ -53,8 +55,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).send('Bad Request: Missing required fields.');
     }
 
-    const maxLength = 32;
-    const truncatedHeadline = selectedHeadline.length > maxLength ? selectedHeadline.substring(0, maxLength) : selectedHeadline;
+    const shortHash = generateHash(selectedHeadline).substring(0, 8);
+    console.log("hash: " + shortHash)
+    const nftName = `HeadlineHarmonies #${shortHash}`;
+    console.log("nftname: " + nftName)
 
     const imageBuffer = Buffer.from(image, 'base64');
 
@@ -96,8 +100,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log("ImageUri: " + imageUri);
 
     const uri = await umi.uploader.uploadJson({
-      name: truncatedHeadline,
-      description: "'" + selectedHeadline + "'" + " in the " + selectedStyle + " style.",
+      name: nftName,
+      description:  "An interpretation of " + "'" + selectedHeadline + "'" + " inspired by the " + selectedStyle + " style.",
       image: imageUri,
       attributes: attributes,
     });
@@ -122,7 +126,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const ix = await create(umi, {
       asset: assetKeypair,
       collection: collection,
-      name: truncatedHeadline,
+      name: nftName,
       authority: collectionAuthority,
       payer: frontEndSigner,
       owner: frontendPubkey,
@@ -145,54 +149,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         },
       ],
     })
-    // .add(verifyCollectionV1(umi, {
-    //   metadata: meta,
-    //   collectionMint: publicKey("bTScLTgqYYXVhYUxBxLg9iKhFGgmBoNF8YywAXjH3uW"),
-    //   authority: umi.identity,
-    // }))
-    // .add(transferSol(umi, {
-      //     destination: publicKey("bTScLTgqYYXVhYUxBxLg9iKhFGgmBoNF8YywAXjH3uW"),
-      //     amount: sol(0.01)
-      // }))
-      //.setFeePayer(signer)
+    .add(transferSol(umi, {
+          source: frontEndSigner,
+          destination: publicKey("bTScLTgqYYXVhYUxBxLg9iKhFGgmBoNF8YywAXjH3uW"),
+          amount: sol(0.1)
+      }))
       .useV0()
   .setBlockhash(await umi.rpc.getLatestBlockhash())
   .buildAndSign(umi);
-
-    // const ix = await createNft(umi, {
-    //   mint: mint,
-    //   name: truncatedHeadline,
-    //   uri: uri,
-    //   sellerFeeBasisPoints: percentAmount(5),
-    //   //payer: signer,
-    //   collection: {
-    //     key: publicKey("bTScLTgqYYXVhYUxBxLg9iKhFGgmBoNF8YywAXjH3uW"),
-    //     verified: false,
-    //   },
-    //   creators: [
-    //     {
-    //       address: publicKey(publicKey),
-    //       share: 80,
-    //       verified: true,
-    //     },
-    //     {
-    //       address: publicKey("DMteCYezdd8Pzhk7LpMF9fGcKBfiqA5kzmPguiZhENDe"),
-    //       share: 20,
-    //       verified: true,
-    //     }
-    //   ],
-    // })
-    //   .add(verifyCollectionV1(umi, {
-    //     metadata: meta,
-    //     collectionMint: publicKey("bTScLTgqYYXVhYUxBxLg9iKhFGgmBoNF8YywAXjH3uW"),
-    //     authority: umi.identity,
-    //   }))
-    //   // .add(transferSol(umi, {
-    //   //     destination: publicKey("bTScLTgqYYXVhYUxBxLg9iKhFGgmBoNF8YywAXjH3uW"),
-    //   //     amount: sol(0.01)
-    //   // }))
-    //   //.setFeePayer(signer)
-    //   .buildWithLatestBlockhash(umi);
 
     let backTx = await umi.identity.signTransaction(ix);
     backTx = await assetKeypair.signTransaction(backTx);

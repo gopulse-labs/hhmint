@@ -10,14 +10,6 @@ interface Scores {
   mediaCoverage: number;
 }
 
-function extractScores(responseText: string): Scores {
-const regexPatterns = {
-    globalImpact: /Global Impact:\s*(\d+\.\d+)/,
-    longevity: /Longevity:\s*(\d+\.\d+)/,
-    culturalSignificance: /Cultural Significance:\s*(\d+\.\d+)/,
-    mediaCoverage: /Media Coverage:\s*(\d+\.\d+)/
-};
-
 let scores: Scores = {
     globalImpact: 0,
     longevity: 0,
@@ -25,23 +17,35 @@ let scores: Scores = {
     mediaCoverage: 0
 };
 
-// Iterate over each score type and attempt to find matches
-for (const [key, regex] of Object.entries(regexPatterns)) {
-    const match = responseText.match(regex);
-    if (match && match[1]) {
-        scores[key as keyof Scores] = parseFloat(match[1]);  // Safely indexing using keyof Scores
-    } else {
-        console.error(`No match found for ${key}.`);
-    }
-}
+let price = 0;
 
-return scores;
+function extractScores(responseText: string): Scores {
+    const regexPatterns = {
+        globalImpact: /Global Impact:\s*(\d+\.\d+)/,
+        longevity: /Longevity:\s*(\d+\.\d+)/,
+        culturalSignificance: /Cultural Significance:\s*(\d+\.\d+)/,
+        mediaCoverage: /Media Coverage:\s*(\d+\.\d+)/
+    };
+
+  
+
+    // Iterate over each score type and attempt to find matches
+    for (const [key, regex] of Object.entries(regexPatterns)) {
+        const match = responseText.match(regex);
+        if (match && match[1]) {
+            scores[key as keyof Scores] = parseFloat(match[1]);  // Safely indexing using keyof Scores
+        } else {
+            console.error(`No match found for ${key}.`);
+        }
+    }
+
+    return scores;
 }
 
 const calculateAndSetAveragePrice = (scores: Scores) => {
 const { globalImpact, longevity, culturalSignificance, mediaCoverage } = scores;
 const average = (globalImpact + longevity + culturalSignificance + mediaCoverage) / 4;
-const finalPrice = average * 10;
+const finalPrice = average;
 
 // Set the average as the new price
 return finalPrice;
@@ -57,28 +61,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Missing required fields: selectedStyle or selectedHeadline' });
     }
 
+    console.log("style: " + selectedStyle);
+    console.log("headline: " + selectedHeadline);
+
     const openai = new OpenAI({
       apiKey: process.env.openAI, 
       dangerouslyAllowBrowser: true });
 
+      
+
+      do   {
+
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4",
       messages: [
           { role: "system", content: `Please provide a detailed analysis of the following news headline. Each category should be scored on a precise scale from 
-            0.01 to 0.99, reflecting subtle differences in impact and significance based on the event's details and implications. Ensure that each score 
+            0.01 to 0.99, reflecting subtle differences in impact and significance based on the headline's details and implications. Ensure that each score 
             truly captures the gradation of impact, significance, and anticipated coverage, avoiding rounding to general values unless absolutely fitting. Evaluate 
             each aspect carefully and justify each score with specific reasons drawn from the event's characteristics.”
 
           Scoring Guidelines:
+            Global Impact:
 
-            •	Global Impact: Score from 0.01 to 0.99, where 0.01 represents minimal impact and 0.99 indicates a profound global effect.
-            Consider factors like international relations, global markets, and worldwide public health.
-            •	Longevity: Score from 0.01 to 0.99, assessing how long the effects of the event will last. A score closer to 
-            0.01 suggests transient effects, whereas 0.99 suggests changes or consequences enduring over generations.
-            •	Cultural Significance: Evaluate how deeply the event influences cultural values, societal norms, and artistic
-            expressions across different regions, scoring minutely to reflect the extent and depth of cultural penetration.
-            •	Media Coverage: Assign a score based on the extent, depth, and duration of anticipated media attention across the globe.
-            Detailed considerations should include the diversity of reporting sources, the sustained interest over time, and the intensity of the coverage.` },
+            0.01 to 0.2: Minor local interest (e.g., local events, minor news).
+            0.21 to 0.5: Significant national interest (e.g., national sports events, national political news).
+            0.51 to 0.8: Major international interest (e.g., international sporting events, significant political events in large countries).
+            0.81 to 1: Worldwide impact (e.g., global pandemics, world wars, major scientific breakthroughs).
+            Longevity:
+
+            0.01 to 0.2: Short-term interest (days to weeks).
+            0.21 to 0.5: Medium-term interest (months to a few years).
+            0.51 to 0.8: Long-term interest (decades).
+            0.81 to 1: Permanent impact (centuries or more).
+            Cultural Significance:
+
+            0.01 to 0.2: Minor or niche cultural impact.
+            0.21 to 0.5: Significant cultural impact within a country or region.
+            0.51 to 0.8: Major cultural impact affecting multiple countries or regions.
+            0.81 to 1: Profound cultural impact, leading to major changes in global culture or history.
+            Media Coverage:
+
+            0.01 to 0.2: Limited media coverage.
+            0.21 to 0.5: Moderate media coverage in a few countries.
+            0.51 to 0.8: Extensive media coverage in many countries.
+            0.81 to 1: Intense media coverage globally.` },
           {
               role: "user",
               content: selectedHeadline || "No headline provided",
@@ -87,10 +113,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   });
 
   const openAiResponse = completion.choices[0].message.content || "";
-const scores = extractScores(openAiResponse);
-const price = calculateAndSetAveragePrice(scores);
+  scores = extractScores(openAiResponse);
+  price = calculateAndSetAveragePrice(scores);
 
-console.log("openai: " + scores, price)
+  console.log("openai: " + JSON.stringify(scores), price);
+
+}
+
+  while (price === 0 && Object.values(scores).some(score => score === 0));
 
     const prompts = [
         `Craft a masterpiece, channeling the aesthetic essence of ${selectedStyle}, to convey the message behind the headline: "${selectedHeadline}"`,
@@ -120,23 +150,27 @@ console.log("openai: " + scores, price)
     }
 
     try {
-      const response = await fetch(hfApiEndpoint, {
-          method: 'POST',
-          headers: {
-              'Authorization': `${hfApiKey}`,
-              'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ inputs: currentPrompt })
-      });
-  
-      if (!response.ok) {
-        const errorBody = await response.json(); // Assuming the server sends back a JSON error message
-        console.error('Error generating image:', errorBody);
-        throw new Error(`HTTP error! Status: ${response.status}, ${errorBody.error}`);
-      }
+        console.log('Making API call to Hugging Face with prompt:', currentPrompt);
+        const response = await fetch(hfApiEndpoint, {
+           method: 'POST',
+           headers: {
+               'Authorization': `${hfApiKey}`,
+               'Content-Type': 'application/json'
+           },
+           body: JSON.stringify({ inputs: currentPrompt })
+        });
+        console.log('API call complete, response status:', response.status);
+        
+        if (!response.ok) {
+           const errorBody = await response.text();  // Use text first to avoid JSON parse errors
+           console.log('API call failed, response body:', errorBody);
+           throw new Error(`HTTP error! Status: ${response.status}, Body: ${errorBody}`);
+        }
 
-      const buffer = await response.arrayBuffer();
-      const base64Image = Buffer.from(buffer).toString('base64');
+        const buffer = await response.arrayBuffer();
+        console.log('Response buffer received, size:', buffer.byteLength);
+        const base64Image = Buffer.from(buffer).toString('base64');
+        console.log('Image converted to Base64');
       res.status(200).json({ image: base64Image, scores, price });
         } catch (error) {
             console.error('Error generating image:', error);

@@ -29,32 +29,9 @@ import fs from "node:fs";
 import FormData from "form-data";
 import OpenAI from "openai";
 
-//TODO: configure environment variables
-
-//TODO: show attributes on frontend after image generation
-
-//TODO: move front end logic to generate image to serveless function
-
-//TODO: use openai api to score headline for pricing during image generation function on vercel and create jwt token
-
-//TODO: check scoring token against passed in score during mint process
-
-//TODO: create jwt token for headlines array returned rss feed within getNews serverless function 
-//to cross check that the user chosen headline passed into generateImage serverless function
-//is part of the array of headlines from rss feed
-
-//TODO: cross check jwt token again to be sure that no false data can be passed to mintHH function
-
-//TODO: fetch asset data to disable minted headline and style combinations, then confirm again during minting
+//TODO: jwt cross checking
 
 const solanaRpcUrl = process.env.solanaRpcUrl;
-const openai = new OpenAI({
-  apiKey: process.env.openAI, 
-  dangerouslyAllowBrowser: true });
-
-const hfApi = process.env.hfApi;
-const hfApiEndpoint = process.env.hfApiEndpoint;
-let currentPromptIndex = 0;
 let umi: Umi;
 
 library.add(faTwitter, faTelegram, faLinkedin, faGithub);
@@ -292,16 +269,22 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
     
     <Stack gap={4} align="center">
  
-      <Text style={{
-          maxWidth: '80%',
-          wordWrap: 'break-word',
-          textAlign: 'center',
-        }}>
-      At the crossroads of art and technology lies a first-of-its-kind NFT collection where you can 
-      own a unique visual rendering of unfolding history. The combination of sublime imagery and the 
-      unfiltered hope and horror of our modern world converges with the power of generative AI to 
-      transform a headline into a piece of digital history.
-      </Text>
+ <Box
+  maxWidth={{ base: "90%", md: "768px" }} // Responsive max width
+  width="100%" // Uses full width up to the max width
+  mx="auto" // Centers the box
+  p={4} // Adds padding around the text
+>
+  <Text
+    textAlign="center" // Centers the text inside the Text component
+    wordBreak="break-word" // Ensures long words do not overflow
+  >
+    At the crossroads of art and technology lies a first-of-its-kind digital art collection where you can 
+    own a unique visual rendering of unfolding history. The combination of sublime imagery and the 
+    unfiltered hope and horror of our modern world converges with the power of generative AI to 
+    transform a headline into a piece of digital history.
+  </Text>
+</Box>
       
       {wallets.filter((wallet) => wallet.readyState === "Installed").length >
       0 ? (
@@ -340,7 +323,7 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
   <p style={{ marginBottom: '2px', fontWeight: 'bold', fontSize: '1rem', background: 'linear-gradient(to right, #9945FF, #14F195)', WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent' }}>HeadlineHarmonies</p>
   <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2px' }}>
-    <a href="https://x.com/thomasfdevito" target="_blank" rel="noopener noreferrer">
+    <a href="https://x.com/HdlnHarmonies" target="_blank" rel="noopener noreferrer">
       <FontAwesomeIcon icon={faTwitter} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
     </a>
     <a href="https://github.com/gopulse-labs/hhmint" target="_blank" rel="noopener noreferrer">
@@ -363,6 +346,15 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
       <FontAwesomeIcon icon={faGithub} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
     </a>
   </div>
+  <br />
+  <div style={{
+  fontFamily: 'Arial, sans-serif',
+  fontSize: '16px',
+  textAlign: 'center',
+  color: '#333'
+}}>
+  Made with <span style={{ color: '#e25555', fontSize: '24px' }}>&hearts;</span> in NY
+</div>
 </footer>
 
     
@@ -371,22 +363,22 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
     
     <Stack gap={4} align="center">
     <Box
-             maxW={['90%', '80%', 'md']}
-             mx='auto'
-             p={[2, 4]}
-        borderWidth={1}
-        borderRadius="md"
-        boxShadow="lg"
-      >
-        <Text
-          maxW="80%"
-          mx="auto"
-          textAlign="center"
-          wordBreak="break-word"
-        >
-          {publicKey.toBase58()}
-        </Text>
-      </Box>
+  maxW={['90%', '80%', 'md']}
+  mx="auto"
+  p={[2, 4]}
+  borderWidth="1"
+  borderRadius="md"
+  boxShadow="0px 4px 10px rgba(0, 0, 0, 0.5)" // Darker shadow
+>
+  <Text
+    maxW="80%"
+    mx="auto"
+    textAlign="center"
+    wordBreak="break-word"
+  >
+    {publicKey.toBase58()}
+  </Text>
+</Box>
 
       <Button onClick={disconnect} bgGradient="linear(to-r, #9945FF, #14F195)">Disconnect Wallet</Button>
 
@@ -418,24 +410,25 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
           </h2>
 
           <AccordionPanel pb={4}>
-          <Box
-        maxW="md"
-        mx="auto"
-
-        p={4}
-        borderWidth={1}
-        borderRadius="md"
-        boxShadow="lg"
-      >
-        <Text
-          maxW="80%"
-          mx="auto"
-          textAlign="center"
-          wordBreak="break-word"
-        >
-          {selectedHeadline && <Text>{selectedHeadline}</Text>}  
-          </Text>
-          </Box>
+          {selectedHeadline && (
+            <Box
+              maxW="md"
+              mx="auto"
+              p={4}
+              borderWidth="1"
+              borderRadius="md"
+              boxShadow="0px 4px 10px rgba(0, 0, 0, 0.5)" 
+            >
+              <Text
+                maxW="80%"
+                mx="auto"
+                textAlign="center"
+                wordBreak="break-word"
+              >
+                {selectedHeadline}
+              </Text>
+            </Box>
+          )}
           <br />
               <Grid
                 templateColumns={{ base: 'repeat(1, 1fr)', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }}
@@ -491,24 +484,25 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
             </AccordionButton>
           </h2>
           <AccordionPanel pb={4}>
-          <Box
-        maxW="md"
-        mx="auto"
-
-        p={4}
-        borderWidth={1}
-        borderRadius="md"
-        boxShadow="lg"
-      >
-        <Text
-          maxW="80%"
-          mx="auto"
-          textAlign="center"
-          wordBreak="break-word"
-        >
-          {selectedHeadline && <Text>{selectedHeadline}</Text>}
-          </Text>
-          </Box>
+          {selectedHeadline && (
+            <Box
+              maxW="md"
+              mx="auto"
+              p={4}
+              borderWidth="1"
+              borderRadius="md"
+              boxShadow="0px 4px 10px rgba(0, 0, 0, 0.5)" 
+            >
+              <Text
+                maxW="80%"
+                mx="auto"
+                textAlign="center"
+                wordBreak="break-word"
+              >
+                {selectedHeadline}
+              </Text>
+            </Box>
+          )}
           <Box padding="20px">
       <Grid 
          templateColumns={{ base: "repeat(1, 1fr)", sm: "repeat(2, 1fr)", md: "repeat(4, 1fr)"}} 
@@ -560,32 +554,37 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
     <AccordionPanel pb={4}>
     <div>
     <Box
-        maxW="md"
+      maxW="md"
+      mx="auto"
+      p={4}
+      borderWidth="1"
+      borderRadius="md"
+      boxShadow="0px 4px 10px rgba(0, 0, 0, 0.5)" // Darker shadow for better visibility
+    >
+      <Text
+        maxW="80%"
         mx="auto"
-
-        p={4}
-        borderWidth={1}
-        borderRadius="md"
-        boxShadow="lg"
+        textAlign="center"
+        wordBreak="break-word"
       >
-        <Text
-          maxW="80%"
-          mx="auto"
-          textAlign="center"
-          wordBreak="break-word"
-        >
-{selectedHeadline && selectedStyle && (
-  <Text>An interpretation of &apos;{selectedHeadline}&apos; inspired by the {selectedStyle} style.</Text>
-)}
-        </Text>
-      </Box>
-      <Box padding={3}>
-    <Button onClick={() => generateImage(selectedHeadline, selectedStyle)} bgGradient="linear(to-r, #9945FF, #14F195)">Generate Image</Button>
+        {selectedHeadline && selectedStyle && (
+          <Text>An interpretation of &apos;{selectedHeadline}&apos; inspired by the {selectedStyle} style.</Text>
+        )}
+      </Text>
     </Box>
+    <Box padding={3}>
+    <Button
+        onClick={() => generateImage(selectedStyle, selectedHeadline)}
+        isLoading={loading}
+        loadingText="Generating Image"
+        bgGradient="linear(to-r, #9945FF, #14F195)"
+    >
+        Generate Image
+    </Button>
+</Box>
     <Box>
-    {loading && <p>Creating image, this will take a second...</p>}
+    {loading && <p>Don't like the image? Click "Generate" again to try another.</p>}
     </Box>
-    <br />
     <Box style={{
           display: "flex",
           justifyContent: "center",
@@ -596,23 +595,23 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
     </Box>
     <br />
     {scores1 && (
-          <Box
-          maxW="md"
-          mx="auto"
-  
-          p={4}
-          borderWidth={1}
-          borderRadius="md"
-          boxShadow="lg"
-        >
-            <Text fontWeight="bold" mb={2}>Attributes:</Text>
-            <Text>Global Impact: {scores1.globalImpact.toFixed(2)}</Text>
-            <Text>Longevity: {scores1.longevity.toFixed(2)}</Text>
-            <Text>Cultural Significance: {scores1.culturalSignificance.toFixed(2)}</Text>
-            <Text>Media Coverage: {scores1.mediaCoverage.toFixed(2)}</Text>
-            {/* <Text fontSize="xl" mt={4} fontWeight="bold">Price: {price.toFixed(2)} SOL</Text> */}
-          </Box>
-        )}
+      <Box
+        maxW="md"
+        mx="auto"
+        p={4}
+        borderWidth="1"
+        borderRadius="md"
+        boxShadow="0px 4px 10px rgba(0, 0, 0, 0.5)" // Updated darker shadow
+      >
+        <Text fontWeight="bold" mb={2}>Attributes:</Text>
+        <Text>Global Impact: {scores1.globalImpact.toFixed(2)}</Text>
+        <Text>Longevity: {scores1.longevity.toFixed(2)}</Text>
+        <Text>Cultural Significance: {scores1.culturalSignificance.toFixed(2)}</Text>
+        <Text>Media Coverage: {scores1.mediaCoverage.toFixed(2)}</Text>
+        {/* Uncomment to display price if needed */}
+        {/* <Text fontSize="xl" mt={4} fontWeight="bold">Price: {price.toFixed(2)} SOL</Text> */}
+      </Box>
+    )}
    
     </div>
     </AccordionPanel>
@@ -629,25 +628,24 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
     </h2>
     <AccordionPanel pb={4}>
     <Box
-        maxW="md"
+      maxW="md"
+      mx="auto"
+      p={4}
+      borderWidth="1"
+      borderRadius="md"
+      boxShadow="0px 4px 10px rgba(0, 0, 0, 0.5)" // Darker shadow for better visibility
+    >
+      <Text
+        maxW="80%"
         mx="auto"
-
-        p={4}
-        borderWidth={1}
-        borderRadius="md"
-        boxShadow="lg"
+        textAlign="center"
+        wordBreak="break-word"
       >
-        <Text
-          maxW="80%"
-          mx="auto"
-          textAlign="center"
-          wordBreak="break-word"
-        >
-{selectedHeadline && selectedStyle && (
-  <Text>An interpretation of &apos;{selectedHeadline}&apos; inspired by the {selectedStyle} style.</Text>
-)}
-        </Text>
-      </Box>
+        {selectedHeadline && selectedStyle && (
+          <Text>An interpretation of &apos;{selectedHeadline}&apos; inspired by the {selectedStyle} style.</Text>
+        )}
+      </Text>
+    </Box>
       <br />
     <Box style={{
           display: "flex",
@@ -657,65 +655,44 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
         }}>
     {imageSrc && <Image src={imageSrc} alt="Generated Image" />}
     </Box>
-    <div>
-    <Text>{price !== null ? `${price.toFixed(2)} SOL` : 'Loading Price...'}</Text>
-    <Tooltip
-      label={
-        <VStack spacing={1} p={4} align="start" bg="white" shadow="md" borderColor="gray.200">
-          <Text fontWeight="bold">Attribute Scoring:</Text>
-          <VStack align="start">
-            <Text><strong>Global Impact:</strong></Text>
-            <Text>0.01 to 0.2: Minor local interest (e.g., local events, minor news).</Text>
-            <Text>0.21 to 0.5: Significant national interest (e.g., national sports events, national political news).</Text>
-            <Text>0.51 to 0.8: Major international interest (e.g., international sporting events, significant political events in large countries).</Text>
-            <Text>0.81 to 1: Worldwide impact (e.g., global pandemics, world wars, major scientific breakthroughs).</Text>
-          </VStack>
-          <VStack align="start" mt={2}>
-            <Text><strong>Longevity:</strong></Text>
-            <Text>0.01 to 0.2: Short-term interest (days to weeks).</Text>
-            <Text>0.21 to 0.5: Medium-term interest (months to a few years).</Text>
-            <Text>0.51 to 0.8: Long-term interest (decades).</Text>
-            <Text>0.81 to 1: Permanent impact (centuries or more).</Text>
-          </VStack>
-          <VStack align="start" mt={2}>
-            <Text><strong>Cultural Significance:</strong></Text>
-            <Text>0.01 to 0.2: Minor or niche cultural impact.</Text>
-            <Text>0.21 to 0.5: Significant cultural impact within a country or region.</Text>
-            <Text>0.51 to 0.8: Major cultural impact affecting multiple countries or regions.</Text>
-            <Text>0.81 to 1: Profound cultural impact, leading to major changes in global culture or history.</Text>
-          </VStack>
-          <VStack align="start" mt={2}>
-            <Text><strong>Media Coverage:</strong></Text>
-            <Text>0.01 to 0.2: Limited media coverage.</Text>
-            <Text>0.21 to 0.5: Moderate media coverage in a few countries.</Text>
-            <Text>0.51 to 0.8: Extensive media coverage in many countries.</Text>
-            <Text>0.81 to 1: Intense media coverage globally.</Text>
-          </VStack>
-        </VStack>
-      }
-      aria-label="Price scoring criteria"
-      hasArrow
-      placement="auto"
-      closeOnClick={true}
-      shouldWrapChildren
-    >
-      <IconButton
-        aria-label="Info"
-        icon={<InfoIcon />}
-        onClick={isOpen ? onClose : onOpen}
-        variant="ghost"
-        size="lg"
-      />
-    </Tooltip>
-    </div>
+        <br />
+    <Box>
+    {scores1 && (
+      <Box
+        maxW="md"
+        mx="auto"
+        p={4}
+        borderWidth="1"
+        borderRadius="md"
+        boxShadow="0px 4px 10px rgba(0, 0, 0, 0.5)" // Updated darker shadow
+      >
+        <Text fontWeight="bold" mb={2}>Attributes:</Text>
+        <Text>Global Impact: {scores1.globalImpact.toFixed(2)}</Text>
+        <Text>Longevity: {scores1.longevity.toFixed(2)}</Text>
+        <Text>Cultural Significance: {scores1.culturalSignificance.toFixed(2)}</Text>
+        <Text>Media Coverage: {scores1.mediaCoverage.toFixed(2)}</Text>
+        {/* Uncomment to display price if needed */}
+        {/* <Text fontSize="xl" mt={4} fontWeight="bold">Price: {price.toFixed(2)} SOL</Text> */}
+      </Box>
+    )}
+    <br />
+
+{price !== null ? (
     <Button onClick={() => {
-  if (imageFile && selectedHeadline && selectedStyle && scores1 && frontEndKey) {
-    handleMint(imageFile, selectedHeadline, selectedStyle, frontEndKey, scores1);
-  } else {
-    console.error("ImageSrc is null");
-  }
-}} bgGradient="linear(to-r, #9945FF, #14F195)">Mint your HeadlineHarmonies NFT</Button>
-      
+        if (imageFile && selectedHeadline && selectedStyle && scores1 && frontEndKey) {
+            handleMint(imageFile, selectedHeadline, selectedStyle, frontEndKey, scores1);
+        } else {
+            console.error("Required data is missing for minting");
+        }
+    }} bgGradient="linear(to-r, #9945FF, #14F195)">
+        Mint for {price.toFixed(2)} SOL
+    </Button>
+) : (
+    <Button isDisabled bgGradient="linear(to-r, #9945FF, #14F195)">
+        Mint
+    </Button>
+)}
+      </Box>
     </AccordionPanel>
   </AccordionItem>
   </Accordion>
@@ -728,7 +705,7 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
   <p style={{ marginBottom: '2px', fontWeight: 'bold', fontSize: '1rem', background: 'linear-gradient(to right, #9945FF, #14F195)', WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent' }}>HeadlineHarmonies</p>
   <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2px' }}>
-    <a href="https://x.com/thomasfdevito" target="_blank" rel="noopener noreferrer">
+    <a href="https://x.com/HdlnHarmonies" target="_blank" rel="noopener noreferrer">
       <FontAwesomeIcon icon={faTwitter} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
     </a>
     <a href="https://github.com/gopulse-labs/hhmint" target="_blank" rel="noopener noreferrer">
@@ -751,6 +728,15 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
       <FontAwesomeIcon icon={faGithub} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
     </a>
   </div>
+  <br />
+  <div style={{
+  fontFamily: 'Arial, sans-serif',
+  fontSize: '16px',
+  textAlign: 'center',
+  color: '#333'
+}}>
+  Made with <span style={{ color: '#e25555', fontSize: '24px' }}>&hearts;</span> in NY
+</div>
 </footer>
 <br />
     </Stack>
