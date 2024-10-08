@@ -64,6 +64,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   const [isOwner, setIsOwner] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const [isTouchDevice] = useMediaQuery("(hover: none) and (pointer: coarse)");
 
@@ -142,7 +143,9 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+      const errorMessage = `HuggingFace error! Status: ${response.status}`;
+      setError(errorMessage);  // Set the error state to display the message
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
@@ -582,6 +585,12 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
         Generate Image
     </Button>
 </Box>
+{/* Error message display */}
+{error && (
+  <Box color="red" padding={3} textAlign="center">
+    <Text>Error: {error}</Text>
+  </Box>
+)}
     <Box>
     {loading && <p>Don't like the image? Click "Generate" again to try another.</p>}
     </Box>
