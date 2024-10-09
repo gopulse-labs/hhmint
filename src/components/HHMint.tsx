@@ -131,6 +131,7 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
     setLoading(true);
     setImageSrc(null);
     setScores(null);
+    setError(null);
     
     console.log(selectedHeadline, selectedStyle);
 
