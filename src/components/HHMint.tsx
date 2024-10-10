@@ -283,7 +283,7 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
     textAlign="center" // Centers the text inside the Text component
     wordBreak="break-word" // Ensures long words do not overflow
   >
-    At the crossroads of art and technology lies a first-of-its-kind digital art collection where you can 
+    At the crossroads of art and technology lies a first-of-its-kind collection where you can 
     own a unique visual rendering of unfolding history. The combination of sublime imagery and the 
     unfiltered hope and horror of our modern world converges with the power of generative AI to 
     transform a headline into a piece of digital history.
@@ -357,7 +357,7 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
   textAlign: 'center',
   color: '#333'
 }}>
-  Made with <span style={{ color: '#e25555', fontSize: '24px' }}>&hearts;</span> in NY
+  Made with <span style={{ color: '#e25555', fontSize: '24px' }}>&hearts;</span> in NYC
 </div>
 </footer>
 
@@ -745,7 +745,7 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
   textAlign: 'center',
   color: '#333'
 }}>
-  Made with <span style={{ color: '#e25555', fontSize: '24px' }}>&hearts;</span> in NY
+  Made with <span style={{ color: '#e25555', fontSize: '24px' }}>&hearts;</span> in NYC
 </div>
 </footer>
 <br />
