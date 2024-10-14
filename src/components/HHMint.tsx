@@ -104,6 +104,13 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     }
   }
 
+  const [hasStarted, setHasStarted] = useState(false);
+
+  const getStarted = () => {
+    setHasStarted(true);
+    // Additional actions after setting hasStarted
+  };
+
   function handleStyleClick(style: string, id: string) {
     setSelectedStyle(style);
     gridButtonsData.forEach(button => {
@@ -269,7 +276,7 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
       position: 'top', });
   };
 
-  return !publicKey ? (
+  return !hasStarted ? (
     
     <Stack gap={4} align="center">
  
@@ -283,45 +290,23 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
     textAlign="center" // Centers the text inside the Text component
     wordBreak="break-word" // Ensures long words do not overflow
   >
-    At the crossroads of art and technology lies a first-of-its-kind collection where you can 
+    At the crossroads of art and technology lies a first-of-its-kind NFT collection where you can 
     own a unique visual rendering of unfolding history. The combination of sublime imagery and the 
     unfiltered hope and horror of our modern world converges with the power of generative AI to 
     transform a headline into a piece of digital history.
   </Text>
 </Box>
-      
-      {wallets.filter((wallet) => wallet.readyState === "Installed").length >
-      0 ? (
-        
-        wallets
-        
-          .filter((wallet) => wallet.readyState === "Installed")
-          .map((wallet) => (
-            
-            <Button
-              key={wallet.adapter.name}
-              onClick={() => select(wallet.adapter.name)}
-              bgGradient="linear(to-r, #9945FF, #14F195)"
-              w="64"
-              size="lg"
-              fontSize="md"
-              leftIcon={
-                <Image
-                  src={wallet.adapter.icon}
-                  alt={wallet.adapter.name}
-                  h={6}
-                  w={6}
-                />
-              }
-            >
-              {wallet.adapter.name}
-            </Button>
-          
-          ))
-          
-      ) : (
-        <Text>No wallet found. Please download a supported Solana wallet</Text>
-      )}
+
+<Button
+      bgGradient="linear(to-r, #9945FF, #14F195)"
+      w="64"
+      size="lg"
+      fontSize="md"
+ 
+      onClick={getStarted}
+    >
+      Get Started
+    </Button>
       
       <footer style={{ textAlign: 'center', paddingTop: '20px' }}>
   <p style={{ marginBottom: '2px', fontWeight: 'bold', fontSize: '1rem', background: 'linear-gradient(to right, #9945FF, #14F195)', WebkitBackgroundClip: 'text',
@@ -364,27 +349,63 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
     
     </Stack>
   ) : (
+
+    
     
     <Stack gap={4} align="center">
-    <Box
-  maxW={['90%', '80%', 'md']}
-  mx="auto"
-  p={[2, 4]}
-  borderWidth="1"
-  borderRadius="md"
-  boxShadow="0px 4px 10px rgba(0, 0, 0, 0.5)" // Darker shadow
->
-  <Text
-    maxW="80%"
+    {publicKey && (
+  <Box
+    maxW={['90%', '80%', 'md']}
     mx="auto"
-    textAlign="center"
-    wordBreak="break-word"
+    p={[2, 4]}
+    borderWidth="1"
+    borderRadius="md"
+    boxShadow="0px 4px 10px rgba(0, 0, 0, 0.5)" // Darker shadow for better visibility
   >
-    {publicKey.toBase58()}
-  </Text>
-</Box>
+    <Text
+      maxW="80%"
+      mx="auto"
+      textAlign="center"
+      wordBreak="break-word"
+    >
+      {publicKey.toBase58()}
+    </Text>
+  </Box>
+)}
 
-      <Button onClick={disconnect} bgGradient="linear(to-r, #9945FF, #14F195)">Disconnect Wallet</Button>
+{publicKey ? (
+  // Show the Disconnect button if a wallet is connected
+  <Button onClick={disconnect} bgGradient="linear(to-r, #9945FF, #14F195)">Disconnect Wallet</Button>
+) : (
+  // Show Connect buttons if no wallet is connected
+  wallets.filter((wallet) => wallet.readyState === "Installed").length > 0 ? (
+    wallets
+      .filter((wallet) => wallet.readyState === "Installed")
+      .map((wallet) => (
+        <Button
+          key={wallet.adapter.name}
+          onClick={() => select(wallet.adapter.name)}
+          bgGradient="linear(to-r, #9945FF, #14F195)"
+          w="64"
+          size="lg"
+          fontSize="md"
+          leftIcon={
+            <Image
+              src={wallet.adapter.icon}
+              alt={wallet.adapter.name}
+              h={6}
+              w={6}
+            />
+          }
+        >
+          {wallet.adapter.name}
+        </Button>
+      ))
+  ) : (
+    // Show a message if no wallets are installed
+    <Text>No wallet found. Please download a supported Solana wallet</Text>
+  )
+)}
 
       <Text style={{
           maxWidth: '80%',
@@ -687,19 +708,25 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
     )}
     <br />
 
-{price !== null ? (
-    <Button onClick={() => {
-        if (imageFile && selectedHeadline && selectedStyle && scores1 && frontEndKey) {
-            handleMint(imageFile, selectedHeadline, selectedStyle, frontEndKey, scores1);
-        } else {
-            console.error("Required data is missing for minting");
-        }
-    }} bgGradient="linear(to-r, #9945FF, #14F195)">
+    {publicKey && price !== null ? (
+    <Button 
+        onClick={() => {
+            if (imageFile && selectedHeadline && selectedStyle && scores1 && frontEndKey) {
+                handleMint(imageFile, selectedHeadline, selectedStyle, frontEndKey, scores1);
+            } else {
+                console.error("Required data is missing for minting");
+            }
+        }}
+        bgGradient="linear(to-r, #9945FF, #14F195)"
+    >
         Mint for {price.toFixed(2)} SOL
     </Button>
 ) : (
-    <Button isDisabled bgGradient="linear(to-r, #9945FF, #14F195)">
-        Mint
+    <Button 
+        isDisabled={!publicKey || price === null}
+        bgGradient="linear(to-r, #9945FF, #14F195)"
+    >
+        {publicKey ? 'Mint' : 'Connect Wallet to Mint'}
     </Button>
 )}
       </Box>
