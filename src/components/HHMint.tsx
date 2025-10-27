@@ -31,17 +31,24 @@ import OpenAI from "openai";
 
 //TODO: jwt cross checking
 
-const solanaRpcUrl = process.env.solanaRpcUrl;
-let umi: Umi;
+// Use a public env var for client-side access; Next.js injects NEXT_PUBLIC_*
+const solanaRpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || process.env.solanaRpcUrl;
+let umi: Umi | null = null;
 
 library.add(faTwitter, faTelegram, faLinkedin, faGithub);
 
-if (solanaRpcUrl) {
-  umi = createUmi(solanaRpcUrl)
-  .use(mplTokenMetadata())
-  .use(bundlrUploader());
-} else {
-  console.error('RPC node environment variable is not defined.');
+if (typeof window !== 'undefined') {
+  if (solanaRpcUrl) {
+    try {
+      umi = createUmi(solanaRpcUrl)
+        .use(mplTokenMetadata())
+        .use(bundlrUploader());
+    } catch (e) {
+      console.error('Failed to initialize UMI:', e);
+    }
+  } else {
+    console.error('RPC node environment variable is not defined.');
+  }
 }
 
 interface HHMintProps {
@@ -71,7 +78,9 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const wallet = useWallet();
-  umi.use(walletAdapterIdentity(wallet));
+  if (umi) {
+    umi.use(walletAdapterIdentity(wallet));
+  }
 
   const toast = useToast();
 
@@ -257,13 +266,14 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
       console.log('Minting successful: ', response.data.serialized);
       const arr = Object.values(response.data.serialized) as unknown[];
       const uint8Array = new Uint8Array(arr.map(num => Number(num)));
-      const deserialized = umi.transactions.deserialize(uint8Array);
+  if (!umi) throw new Error('UMI not initialized');
+  const deserialized = umi.transactions.deserialize(uint8Array);
 
-      const signedDeserializedCreateAssetTx = await umi.identity.signTransaction(deserialized);
-      const createAssetSignature = base58.deserialize(await umi.rpc.sendTransaction(signedDeserializedCreateAssetTx))[0];
+  const signedDeserializedCreateAssetTx = await umi.identity.signTransaction(deserialized);
+  const createAssetSignature = base58.deserialize(await umi.rpc.sendTransaction(signedDeserializedCreateAssetTx))[0];
       
       // Wait for transaction confirmation
-      const confirmation = await umi.rpc.confirmTransaction(base58.serialize(createAssetSignature), {
+  const confirmation = await umi.rpc.confirmTransaction(base58.serialize(createAssetSignature), {
         strategy: { type: 'blockhash', ...(await umi.rpc.getLatestBlockhash()) },
       });
 
