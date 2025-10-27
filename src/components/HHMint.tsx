@@ -25,9 +25,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTwitter, faTelegram, faLinkedin, faGithub } from '@fortawesome/free-brands-svg-icons';
 import { InfoIcon } from '@chakra-ui/icons';
 import { library } from '@fortawesome/fontawesome-svg-core';
-import fs from "node:fs";
-import FormData from "form-data";
-import OpenAI from "openai";
 
 //TODO: jwt cross checking
 
