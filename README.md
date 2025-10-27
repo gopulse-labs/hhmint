@@ -10,7 +10,7 @@ HeadlineHarmonies is a unique NFT collection that enables users to create and mi
 
 ## Getting Started
 
-To get started with HeadlineHarmonies, simply visit our [website](https://hhmint-tau.vercel.app) and connect your wallet. From there, you can explore the collection, mint your own artworks, and start earning commissions through our referral program.
+To get started with HeadlineHarmonies, simply visit our [website](https://www.headlineharmonies.xyz/) and connect your wallet. From there, you can explore the collection, mint your own artworks, and start earning commissions through our referral program.
 
 ## Installation
 
