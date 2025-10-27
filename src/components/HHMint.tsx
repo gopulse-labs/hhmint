@@ -218,63 +218,86 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
     mediaCoverage: number
 }) => {
     console.log('Start mint process...');
-    console.log("scores:" + scores.globalImpact)
+    console.log("scores:" + scores.globalImpact);
+    
     try {
+      setLoading(true); // Add loading state
       const reader = new FileReader();
-      reader.onloadend = async () => {
-        const result = reader.result as string;
-        if (result) {
-          const base64Image = result.split(',')[1];
-          const response = await axios.post('/api/mintHH', {
-            image: base64Image,
-            selectedHeadline: selectedHeadline,
-            selectedStyle: selectedStyle,
-            frontEndKey: frontEndKey.toBase58(),
-            attributes: [
-              { trait_type: "Global Impact", value: scores.globalImpact },
-              { trait_type: "Longevity", value: scores.longevity },
-              { trait_type: "Cultural Significance", value: scores.culturalSignificance },
-              { trait_type: "Media Coverage", value: scores.mediaCoverage }
-            ] 
-          });
-          
+      
+      const readFilePromise = new Promise((resolve, reject) => {
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(imageFile);
+      });
 
-          if (response.status === 200) {
-            console.log('Minting successful: ', response.data.serialized);
-            const arr = Object.values(response.data.serialized) as unknown[];
-            const uint8Array = new Uint8Array(arr.map(num => Number(num)));
-            const deserialized = umi.transactions.deserialize(uint8Array);
+      const result = await readFilePromise;
+      
+      if (!result || typeof result !== 'string') {
+        throw new Error('Failed to read image file');
+      }
 
+      const base64Image = result.split(',')[1];
+      const response = await axios.post('/api/mintHH', {
+        image: base64Image,
+        selectedHeadline: selectedHeadline,
+        selectedStyle: selectedStyle,
+        frontEndKey: frontEndKey.toBase58(),
+        attributes: [
+          { trait_type: "Global Impact", value: scores.globalImpact },
+          { trait_type: "Longevity", value: scores.longevity },
+          { trait_type: "Cultural Significance", value: scores.culturalSignificance },
+          { trait_type: "Media Coverage", value: scores.mediaCoverage }
+        ] 
+      });
 
-            const signedDeserializedCreateAssetTx = await umi.identity.signTransaction(deserialized);
-            const createAssetSignature = base58.deserialize(await umi.rpc.sendTransaction(signedDeserializedCreateAssetTx))[0]
-            console.log(`\nAsset Created: https://solana.fm/tx/${createAssetSignature}}?cluster=devnet-alpha`);
-          } else {
-            console.error('Unexpected response status: ', response.status);
-            return null;
-          }
-        } else {
-          console.error('Error reading image file.');
-        }
-      };
+      if (response.status !== 200) {
+        throw new Error(`Unexpected response status: ${response.status}`);
+      }
 
-      reader.onerror = (error) => {
-        console.error('Error reading file: ', error);
-      };
+      console.log('Minting successful: ', response.data.serialized);
+      const arr = Object.values(response.data.serialized) as unknown[];
+      const uint8Array = new Uint8Array(arr.map(num => Number(num)));
+      const deserialized = umi.transactions.deserialize(uint8Array);
 
-      reader.readAsDataURL(imageFile);
+      const signedDeserializedCreateAssetTx = await umi.identity.signTransaction(deserialized);
+      const createAssetSignature = base58.deserialize(await umi.rpc.sendTransaction(signedDeserializedCreateAssetTx))[0];
+      
+      // Wait for transaction confirmation
+      const confirmation = await umi.rpc.confirmTransaction(base58.serialize(createAssetSignature), {
+        strategy: { type: 'blockhash', ...(await umi.rpc.getLatestBlockhash()) },
+      });
+
+      if (confirmation.value.err) {
+        throw new Error(`Transaction failed: ${confirmation.value.err}`);
+      }
+
+      const txUrl = `https://solana.fm/tx/${base58.serialize(createAssetSignature)}?cluster=devnet-alpha`;
+      console.log(`\nAsset Created: ${txUrl}`);
+
+      // Show success message only after confirmation
+      toast({
+        title: 'Your HeadlineHarmonies NFT has been minted!',
+        description: `Transaction confirmed! View on Solana FM: ${txUrl}`,
+        status: 'success',
+        duration: 15000,
+        isClosable: true,
+        position: 'top',
+      });
+
     } catch (error) {
-      console.error('Error calling mint function: ', error);
-      return null;
+      console.error('Error in minting process:', error);
+      toast({
+        title: 'Minting Failed',
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        status: 'error',
+        duration: 10000,
+        isClosable: true,
+        position: 'top',
+      });
+    } finally {
+      setLoading(false);
     }
-    toast({
-      title: 'Your HeadlineHarmonies NFT is being minted!',
-      description: 'Check your wallet!',
-      status: 'success',
-      duration: 15000,
-      isClosable: true,
-      position: 'top', });
-  };
+};
 
   return !hasStarted ? (
     

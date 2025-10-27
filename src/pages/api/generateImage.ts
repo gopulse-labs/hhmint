@@ -64,63 +64,70 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log("style: " + selectedStyle);
     console.log("headline: " + selectedHeadline);
 
-    const openai = new OpenAI({
-      apiKey: process.env.openAI, 
-      dangerouslyAllowBrowser: true });
+        // Initialize OpenAI server-side; let SDK read OPENAI_API_KEY from env if not explicitly provided.
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-      
+        // Ask OpenAI to score the headline, with bounded retries and backoff to avoid spamming on errors.
+        scores = { globalImpact: 0, longevity: 0, culturalSignificance: 0, mediaCoverage: 0 };
+        price = 0;
+        const maxAttempts = 2;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                const completion = await openai.chat.completions.create({
+                    model: "gpt-4o-mini",
+                    messages: [
+                        {
+                            role: "system",
+                            content:
+                                `Please provide a detailed analysis of the following news headline. Each category should be scored on a precise scale from 0.01 to 0.99.
+Scoring Guidelines:
+Global Impact: 0.01-0.2 (local), 0.21-0.5 (national), 0.51-0.8 (international), 0.81-1 (worldwide)
+Longevity: 0.01-0.2 (days-weeks), 0.21-0.5 (months-years), 0.51-0.8 (decades), 0.81-1 (permanent)
+Cultural Significance: 0.01-0.2 (niche), 0.21-0.5 (regional), 0.51-0.8 (multi-country), 0.81-1 (global culture/history)
+Media Coverage: 0.01-0.2 (limited), 0.21-0.5 (moderate), 0.51-0.8 (extensive), 0.81-1 (intense)`
+                        },
+                        { role: "user", content: selectedHeadline || "No headline provided" }
+                    ]
+                });
 
-      do   {
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [
-          { role: "system", content: `Please provide a detailed analysis of the following news headline. Each category should be scored on a precise scale from 
-            0.01 to 0.99, reflecting subtle differences in impact and significance based on the headline's details and implications. Ensure that each score 
-            truly captures the gradation of impact, significance, and anticipated coverage, avoiding rounding to general values unless absolutely fitting. Evaluate 
-            each aspect carefully and justify each score with specific reasons drawn from the event's characteristics.”
-
-          Scoring Guidelines:
-            Global Impact:
-
-            0.01 to 0.2: Minor local interest (e.g., local events, minor news).
-            0.21 to 0.5: Significant national interest (e.g., national sports events, national political news).
-            0.51 to 0.8: Major international interest (e.g., international sporting events, significant political events in large countries).
-            0.81 to 1: Worldwide impact (e.g., global pandemics, world wars, major scientific breakthroughs).
-            Longevity:
-
-            0.01 to 0.2: Short-term interest (days to weeks).
-            0.21 to 0.5: Medium-term interest (months to a few years).
-            0.51 to 0.8: Long-term interest (decades).
-            0.81 to 1: Permanent impact (centuries or more).
-            Cultural Significance:
-
-            0.01 to 0.2: Minor or niche cultural impact.
-            0.21 to 0.5: Significant cultural impact within a country or region.
-            0.51 to 0.8: Major cultural impact affecting multiple countries or regions.
-            0.81 to 1: Profound cultural impact, leading to major changes in global culture or history.
-            Media Coverage:
-
-            0.01 to 0.2: Limited media coverage.
-            0.21 to 0.5: Moderate media coverage in a few countries.
-            0.51 to 0.8: Extensive media coverage in many countries.
-            0.81 to 1: Intense media coverage globally.` },
-          {
-              role: "user",
-              content: selectedHeadline || "No headline provided",
-          },
-      ],
-  });
-
-  const openAiResponse = completion.choices[0].message.content || "";
-  scores = extractScores(openAiResponse);
-  price = calculateAndSetAveragePrice(scores);
-
-  console.log("openai: " + JSON.stringify(scores), price);
-
-}
-
-  while (price === 0 && Object.values(scores).some(score => score === 0));
+                const openAiResponse = completion.choices?.[0]?.message?.content ?? "";
+                scores = extractScores(openAiResponse);
+                price = calculateAndSetAveragePrice(scores);
+                console.log("openai scores:", scores, "price:", price);
+                // If we parsed non-zero values, stop trying.
+                if (price > 0 && Object.values(scores).every((s) => s > 0)) break;
+            } catch (err: unknown) {
+                // Normalize known OpenAI errors
+                const e = err as { status?: number; code?: string; error?: { code?: string; message?: string } };
+                const status = e?.status;
+                const code = e?.error?.code || e?.code;
+                const message = (e as any)?.message || e?.error?.message || "OpenAI error";
+                console.error("OpenAI error:", { status, code, message });
+                if (status === 429 || code === "insufficient_quota") {
+                    return res.status(429).json({ error: "OpenAI rate limit/quota exceeded" });
+                }
+                if (status === 401) {
+                    return res.status(401).json({ error: "Invalid OpenAI API key or unauthorized" });
+                }
+                if (status === 404) {
+                    return res.status(404).json({ error: "Requested OpenAI model not available" });
+                }
+                // Other server errors
+                if (status && status >= 500) {
+                    return res.status(502).json({ error: "Upstream OpenAI error" });
+                }
+                // For non-status errors, try next attempt with small backoff; if last attempt, fall back.
+            }
+            if (attempt < maxAttempts) {
+                await new Promise((r) => setTimeout(r, 300 * attempt));
+            }
+        }
+        // If still zeroed after attempts, set a conservative default so UI can proceed.
+        if (price === 0 || Object.values(scores).some((s) => s === 0)) {
+            scores = { globalImpact: 0.25, longevity: 0.25, culturalSignificance: 0.25, mediaCoverage: 0.25 };
+            price = calculateAndSetAveragePrice(scores);
+            console.warn("Using fallback scores due to parsing/availability issues.");
+        }
 
     const prompts = [
         `Craft a masterpiece, channeling the aesthetic essence of ${selectedStyle}, to convey the message behind the headline: "${selectedHeadline}"`,
@@ -138,10 +145,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Choose a random prompt for variation or cycle through them in some manner
     const currentPrompt = prompts[Math.floor(Math.random() * prompts.length)];
 
-    const hfApiEndpoint = process.env.HF_API_ENDPOINT;
+    let hfApiEndpoint = process.env.HF_API_ENDPOINT;
     const hfApiKey = process.env.HF_API;
 
-    console.log(`Hugging Face API Key: ${hfApiKey}`);
+    // Backward-compat: rewrite old deprecated endpoint at runtime if present
+    if (hfApiEndpoint && hfApiEndpoint.includes('api-inference.huggingface.co')) {
+        hfApiEndpoint = hfApiEndpoint.replace('https://api-inference.huggingface.co/', 'https://router.huggingface.co/hf-inference/');
+        console.log('Rewrote HF endpoint to Inference Providers router:', hfApiEndpoint);
+    }
+
+    // Avoid logging secrets
     console.log(`Hugging Face API Endpoint: ${hfApiEndpoint}`);
 
     if (!hfApiEndpoint || !hfApiKey) {
@@ -150,7 +163,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-        console.log('Making API call to Hugging Face with prompt:', currentPrompt);
+                console.log('Making API call to Hugging Face with prompt:', currentPrompt);
         const response = await fetch(hfApiEndpoint, {
            method: 'POST',
            headers: {
@@ -164,14 +177,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (!response.ok) {
            const errorBody = await response.text();  // Use text first to avoid JSON parse errors
            console.log('API call failed, response body:', errorBody);
-           throw new Error(`HTTP error! Status: ${response.status}, Body: ${errorBody}`);
+                     if (response.status === 429) {
+                         return res.status(429).json({ error: 'Hugging Face rate limit exceeded' });
+                     }
+                     return res.status(response.status).json({ error: 'Hugging Face error', details: errorBody });
         }
 
         const buffer = await response.arrayBuffer();
         console.log('Response buffer received, size:', buffer.byteLength);
         const base64Image = Buffer.from(buffer).toString('base64');
         console.log('Image converted to Base64');
-      res.status(200).json({ image: base64Image, scores, price });
+    res.status(200).json({ image: base64Image, scores, price });
         } catch (error) {
             console.error('Error generating image:', error);
             // Use a type guard to check if 'error' is an instance of Error
