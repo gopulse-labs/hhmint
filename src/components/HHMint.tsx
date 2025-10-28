@@ -18,7 +18,7 @@ import { gridButtonsData } from './buttonData';
 import axios from 'axios';
 import parseString from 'xml2js';
 import 'text-encoding';
-import { PublicKey, Keypair } from '@solana/web3.js';
+import { PublicKey, Keypair, Connection } from '@solana/web3.js';
 import bs58 from 'bs58';
 import { fromWeb3JsKeypair, fromWeb3JsPublicKey, toWeb3JsPublicKey } from '@metaplex-foundation/umi-web3js-adapters';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -293,11 +293,42 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
 
     } catch (error) {
       console.error('Error in minting process:', error);
+      // Provide actionable info when backend returns structured error (e.g., 402)
+      const anyErr = error as any;
+      const status = anyErr?.response?.status;
+      const data = anyErr?.response?.data;
+      let description = error instanceof Error ? error.message : 'An unknown error occurred';
+      // Try to extract simulation logs if available (SendTransactionError)
+      try {
+        if (typeof anyErr?.getLogs === 'function') {
+          const conn = new Connection(solanaRpcUrl!, 'confirmed');
+          const logs = await anyErr.getLogs(conn);
+          if (Array.isArray(logs) && logs.length) {
+            description += `\nLogs:\n${logs.join('\n')}`;
+          }
+        } else if (Array.isArray(anyErr?.logs)) {
+          description += `\nLogs:\n${anyErr.logs.join('\n')}`;
+        }
+      } catch (logErr) {
+        console.debug('Failed to fetch simulation logs:', logErr);
+      }
+      if (status && data && typeof data === 'object') {
+        const parts = [data.error, data.details, data.hint]
+          .filter(Boolean)
+          .join(' | ');
+        const extra = [
+          data.serverSignerPublicKey ? `Server signer: ${data.serverSignerPublicKey}` : null,
+          data.payerPublicKey ? `Payer: ${data.payerPublicKey}` : null,
+        ]
+          .filter(Boolean)
+          .join(' | ');
+        description = [parts, extra].filter(Boolean).join(' — ');
+      }
       toast({
         title: 'Minting Failed',
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        description,
         status: 'error',
-        duration: 10000,
+        duration: 15000,
         isClosable: true,
         position: 'top',
       });
