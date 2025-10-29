@@ -62,7 +62,8 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   const [selectedHeadline, setSelectedHeadline] = useState<string | null>(null);
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
   const [scores1, setScores] = useState<Scores | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isMinting, setIsMinting] = useState(false);
   const [realData1, setRealData] = useState<ArrayBuffer | null>(null);
   const [price, setPrice] = useState<number | null>(null);
   const [isOwner, setIsOwner] = useState(false);
@@ -141,9 +142,9 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
 
 async function generateImage(selectedStyle: any, selectedHeadline: any) {
   try {
-    setLoading(true);
-    setImageSrc(null);
-    setScores(null);
+  setIsGenerating(true);
+  setImageSrc(null);
+  setScores(null);
     setError(null);
     
     console.log(selectedHeadline, selectedStyle);
@@ -190,10 +191,10 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
 
        setImageFile(file);
 
-    setLoading(false);
+    setIsGenerating(false);
   } catch (error) {
     console.error('Error fetching data:', error);
-    setLoading(false);
+    setIsGenerating(false);
   }
 }
 
@@ -227,7 +228,8 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
     console.log("scores:" + scores.globalImpact);
     
     try {
-      setLoading(true); // Add loading state
+      if (isMinting) return; // prevent double submit
+      setIsMinting(true);
       const reader = new FileReader();
       
       const readFilePromise = new Promise((resolve, reject) => {
@@ -333,7 +335,7 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
         position: 'top',
       });
     } finally {
-      setLoading(false);
+      setIsMinting(false);
     }
 };
 
@@ -659,14 +661,15 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
       </Text>
     </Box>
     <Box padding={3}>
-    <Button
-        onClick={() => generateImage(selectedStyle, selectedHeadline)}
-        isLoading={loading}
-        loadingText="Generating Image"
-        bgGradient="linear(to-r, #9945FF, #14F195)"
-    >
-        Generate Image
-    </Button>
+  <Button
+    onClick={() => generateImage(selectedStyle, selectedHeadline)}
+    isLoading={isGenerating}
+    loadingText="Generating Image"
+    bgGradient="linear(to-r, #9945FF, #14F195)"
+    isDisabled={isMinting}
+  >
+    Generate Image
+  </Button>
 </Box>
 {/* Error message display */}
 {error && (
@@ -675,7 +678,7 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
   </Box>
 )}
     <Box>
-    {loading && <p>Don't like the image? Click "Generate" again to try another.</p>}
+  {isGenerating && <p>Don't like the image? Click "Generate" again to try another.</p>}
     </Box>
     <Box style={{
           display: "flex",
@@ -770,26 +773,29 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
     <br />
 
     {publicKey && price !== null ? (
-    <Button 
+      <Button 
         onClick={() => {
-            if (imageFile && selectedHeadline && selectedStyle && scores1 && frontEndKey) {
-                handleMint(imageFile, selectedHeadline, selectedStyle, frontEndKey, scores1);
-            } else {
-                console.error("Required data is missing for minting");
-            }
+          if (imageFile && selectedHeadline && selectedStyle && scores1 && frontEndKey && !isMinting) {
+            handleMint(imageFile, selectedHeadline, selectedStyle, frontEndKey, scores1);
+          } else if (!imageFile || !selectedHeadline || !selectedStyle || !scores1 || !frontEndKey) {
+            console.error("Required data is missing for minting");
+          }
         }}
         bgGradient="linear(to-r, #9945FF, #14F195)"
-    >
-        Mint for {price.toFixed(2)} SOL
-    </Button>
-) : (
-    <Button 
+        isLoading={isMinting}
+        loadingText="Minting..."
+        isDisabled={isGenerating}
+      >
+        {isMinting ? 'Minting...' : `Mint for ${price.toFixed(2)} SOL`}
+      </Button>
+    ) : (
+      <Button 
         isDisabled={!publicKey || price === null}
         bgGradient="linear(to-r, #9945FF, #14F195)"
-    >
+      >
         {publicKey ? 'Mint' : 'Connect Wallet to Mint'}
-    </Button>
-)}
+      </Button>
+    )}
       </Box>
     </AccordionPanel>
   </AccordionItem>
