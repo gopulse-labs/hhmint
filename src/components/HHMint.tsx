@@ -1,97 +1,57 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable prefer-const */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState, useEffect } from 'react';
-import { VStack, Stack, Button, Text, Grid, GridItem, Image,
-  Accordion, AccordionItem, AccordionButton,AccordionPanel,
-  AccordionIcon, useMediaQuery, Container, Box, Alert,
-  AlertIcon, AlertTitle, AlertDescription, Toast, useToast, Tooltip, IconButton, useDisclosure, } from "@chakra-ui/react";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
-import { GenericFile, TransactionBuilderItemsInput, Umi, 
-  generateSigner, percentAmount, signerIdentity, sol, transactionBuilder, createSignerFromKeypair, base58 } from '@metaplex-foundation/umi';
-import { createNft, fetchAllDigitalAssetByUpdateAuthority, fetchAllDigitalAssetByVerifiedCollection, fetchDigitalAsset, mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata';
-import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
-import { bundlrUploader } from "@metaplex-foundation/umi-uploader-bundlr";
-import { transferSol } from "@metaplex-foundation/mpl-toolbox";
+import {
+  Stack,
+  Button,
+  Text,
+  Grid,
+  GridItem,
+  Image,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  Box,
+  HStack,
+  Textarea,
+  useToast,
+} from "@chakra-ui/react";
 import { gridButtonsData } from './buttonData';
 import axios from 'axios';
-import parseString from 'xml2js';
-import 'text-encoding';
-import { PublicKey, Keypair, Connection } from '@solana/web3.js';
-import bs58 from 'bs58';
-import { fromWeb3JsKeypair, fromWeb3JsPublicKey, toWeb3JsPublicKey } from '@metaplex-foundation/umi-web3js-adapters';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTwitter, faTelegram, faLinkedin, faGithub } from '@fortawesome/free-brands-svg-icons';
-import { InfoIcon } from '@chakra-ui/icons';
-import { library } from '@fortawesome/fontawesome-svg-core';
-
-//TODO: jwt cross checking
-
-// Use a public env var for client-side access; Next.js injects NEXT_PUBLIC_*
-const solanaRpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || process.env.solanaRpcUrl;
-let umi: Umi | null = null;
-
-library.add(faTwitter, faTelegram, faLinkedin, faGithub);
-
-if (typeof window !== 'undefined') {
-  if (solanaRpcUrl) {
-    try {
-      umi = createUmi(solanaRpcUrl)
-        .use(mplTokenMetadata())
-        .use(bundlrUploader());
-    } catch (e) {
-      console.error('Failed to initialize UMI:', e);
-    }
-  } else {
-    console.error('RPC node environment variable is not defined.');
-  }
-}
 
 interface HHMintProps {
   userPublicKey?: string;
 }
 
+interface Scores {
+  globalImpact: number;
+  longevity: number;
+  culturalSignificance: number;
+  mediaCoverage: number;
+}
+
+function buildDefaultCaption(headline: string, style: string) {
+  const styleTag = style.replace(/[^a-zA-Z0-9]/g, "");
+  return `"${headline}" reimagined in ${style} style.
+
+Created with HeadlineHarmonies.
+#HeadlineHarmonies #AIArt #DigitalArt #NewsArt #${styleTag}`;
+}
+
 const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
-  const { select, wallets, publicKey, disconnect } = useWallet();
-
-  const frontEndKey = publicKey;
-
   const [news, setNews] = useState<string[]>([]);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [selectedHeadline, setSelectedHeadline] = useState<string | null>(null);
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
   const [scores1, setScores] = useState<Scores | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isMinting, setIsMinting] = useState(false);
-  const [realData1, setRealData] = useState<ArrayBuffer | null>(null);
-  const [price, setPrice] = useState<number | null>(null);
-  const [isOwner, setIsOwner] = useState(false);
-  const [showAlert, setShowAlert] = useState(false);
+  const [isPosting, setIsPosting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [caption, setCaption] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const [isTouchDevice] = useMediaQuery("(hover: none) and (pointer: coarse)");
-
-  const { isOpen, onOpen, onClose } = useDisclosure();
-
-  const wallet = useWallet();
-  if (umi) {
-    umi.use(walletAdapterIdentity(wallet));
-  }
-
   const toast = useToast();
-
-  // async function fetchAssets() {
-  //   try {
-  //     const owner = new PublicKey("DMteCYezdd8Pzhk7LpMF9fGcKBfiqA5kzmPguiZhENDe");
-  //     let newKey = fromWeb3JsPublicKey(owner);
-  //     const assets = await fetchAllDigitalAssetByUpdateAuthority(umi, newKey);
-  //     console.log("Collection: " + assets);
-  //   } catch (error) {
-  //     console.error('Error fetching assets:', error);
-  //   }
-  // }
 
   useEffect(() => {
     if (userPublicKey) {
@@ -169,7 +129,6 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
     setImageSrc(`data:image/png;base64,${data.image}`);
 
     setScores(data.scores);  // Update scores state
-    setPrice(data.price); 
 
        // Convert base64 string to a File object
        const base64Response = data.image.split(';base64,').pop();
@@ -190,6 +149,9 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
        const file = new File([blob], 'generated_image.png', { type: 'image/png' });
 
        setImageFile(file);
+       if (selectedHeadline && selectedStyle) {
+         setCaption(buildDefaultCaption(selectedHeadline, selectedStyle));
+       }
 
     setIsGenerating(false);
   } catch (error) {
@@ -198,146 +160,108 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
   }
 }
 
-  function generateSpecialLink() {
-    if (publicKey) {
-      const specialLink = `http://localhost:3000/${publicKey.toBase58()}`;
-      navigator.clipboard.writeText(specialLink)
-        .then(() => {
-          console.log('Special link copied to clipboard: ', specialLink);
-        })
-        .catch((error) => {
-          console.error('Error copying to clipboard: ', error);
-        });
+  function downloadImage() {
+    if (!imageFile) return;
+
+    const url = URL.createObjectURL(imageFile);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = imageFile.name;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  async function copyCaption() {
+    if (!caption.trim()) return;
+
+    try {
+      await navigator.clipboard.writeText(caption);
+      toast({
+        title: "Caption copied",
+        status: "success",
+        duration: 2500,
+        isClosable: true,
+        position: "top",
+      });
+    } catch (copyError) {
+      console.error("Could not copy caption:", copyError);
+      toast({
+        title: "Could not copy caption",
+        description: "You can still copy it manually from the text box.",
+        status: "warning",
+        duration: 3500,
+        isClosable: true,
+        position: "top",
+      });
     }
   }
 
-  interface Scores {
-    globalImpact: number;
-    longevity: number;
-    culturalSignificance: number;
-    mediaCoverage: number;
-}
-
-  const handleMint = async (imageFile: File, selectedHeadline: string, selectedStyle: string, frontEndKey: PublicKey, scores: {
-    globalImpact: number,
-    longevity: number,
-    culturalSignificance: number,
-    mediaCoverage: number
-}) => {
-    console.log('Start mint process...');
-    console.log("scores:" + scores.globalImpact);
-    
-    try {
-      if (isMinting) return; // prevent double submit
-      setIsMinting(true);
-      const reader = new FileReader();
-      
-      const readFilePromise = new Promise((resolve, reject) => {
-        reader.onloadend = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(imageFile);
-      });
-
-      const result = await readFilePromise;
-      
-      if (!result || typeof result !== 'string') {
-        throw new Error('Failed to read image file');
-      }
-
-      const base64Image = result.split(',')[1];
-      const response = await axios.post('/api/mintHH', {
-        image: base64Image,
-        selectedHeadline: selectedHeadline,
-        selectedStyle: selectedStyle,
-        frontEndKey: frontEndKey.toBase58(),
-        attributes: [
-          { trait_type: "Global Impact", value: scores.globalImpact },
-          { trait_type: "Longevity", value: scores.longevity },
-          { trait_type: "Cultural Significance", value: scores.culturalSignificance },
-          { trait_type: "Media Coverage", value: scores.mediaCoverage }
-        ] 
-      });
-
-      if (response.status !== 200) {
-        throw new Error(`Unexpected response status: ${response.status}`);
-      }
-
-      console.log('Minting successful: ', response.data.serialized);
-      const arr = Object.values(response.data.serialized) as unknown[];
-      const uint8Array = new Uint8Array(arr.map(num => Number(num)));
-  if (!umi) throw new Error('UMI not initialized');
-  const deserialized = umi.transactions.deserialize(uint8Array);
-
-  const signedDeserializedCreateAssetTx = await umi.identity.signTransaction(deserialized);
-  const createAssetSignature = base58.deserialize(await umi.rpc.sendTransaction(signedDeserializedCreateAssetTx))[0];
-      
-      // Wait for transaction confirmation
-  const confirmation = await umi.rpc.confirmTransaction(base58.serialize(createAssetSignature), {
-        strategy: { type: 'blockhash', ...(await umi.rpc.getLatestBlockhash()) },
-      });
-
-      if (confirmation.value.err) {
-        throw new Error(`Transaction failed: ${confirmation.value.err}`);
-      }
-
-      const txUrl = `https://solana.fm/tx/${base58.serialize(createAssetSignature)}?cluster=devnet-alpha`;
-      console.log(`\nAsset Created: ${txUrl}`);
-
-      // Show success message only after confirmation
+  async function postToInstagram() {
+    if (!imageFile) {
       toast({
-        title: 'Your HeadlineHarmonies NFT has been minted!',
-        description: `Transaction confirmed! View on Solana FM: ${txUrl}`,
-        status: 'success',
-        duration: 15000,
+        title: "Generate an image first",
+        status: "warning",
+        duration: 3500,
         isClosable: true,
-        position: 'top',
+        position: "top",
       });
-
-    } catch (error) {
-      console.error('Error in minting process:', error);
-      // Provide actionable info when backend returns structured error (e.g., 402)
-      const anyErr = error as any;
-      const status = anyErr?.response?.status;
-      const data = anyErr?.response?.data;
-      let description = error instanceof Error ? error.message : 'An unknown error occurred';
-      // Try to extract simulation logs if available (SendTransactionError)
-      try {
-        if (typeof anyErr?.getLogs === 'function') {
-          const conn = new Connection(solanaRpcUrl!, 'confirmed');
-          const logs = await anyErr.getLogs(conn);
-          if (Array.isArray(logs) && logs.length) {
-            description += `\nLogs:\n${logs.join('\n')}`;
-          }
-        } else if (Array.isArray(anyErr?.logs)) {
-          description += `\nLogs:\n${anyErr.logs.join('\n')}`;
-        }
-      } catch (logErr) {
-        console.debug('Failed to fetch simulation logs:', logErr);
-      }
-      if (status && data && typeof data === 'object') {
-        const parts = [data.error, data.details, data.hint]
-          .filter(Boolean)
-          .join(' | ');
-        const extra = [
-          data.serverSignerPublicKey ? `Server signer: ${data.serverSignerPublicKey}` : null,
-          data.payerPublicKey ? `Payer: ${data.payerPublicKey}` : null,
-        ]
-          .filter(Boolean)
-          .join(' | ');
-        description = [parts, extra].filter(Boolean).join(' — ');
-      }
-      toast({
-        title: 'Minting Failed',
-        description,
-        status: 'error',
-        duration: 15000,
-        isClosable: true,
-        position: 'top',
-      });
-    } finally {
-      setIsMinting(false);
+      return;
     }
-};
+
+    setIsPosting(true);
+    try {
+      const shareData: ShareData = {
+        title: "HeadlineHarmonies",
+        text: caption,
+        files: [imageFile],
+      };
+      const nav = navigator as Navigator & {
+        canShare?: (data?: ShareData) => boolean;
+      };
+
+      if (typeof nav.share === "function" && (!nav.canShare || nav.canShare(shareData))) {
+        await nav.share(shareData);
+        toast({
+          title: "Share sheet opened",
+          description: "Pick Instagram to finish posting.",
+          status: "success",
+          duration: 3500,
+          isClosable: true,
+          position: "top",
+        });
+        return;
+      }
+
+      await copyCaption();
+      downloadImage();
+      window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+      toast({
+        title: "Ready to post",
+        description: "Image downloaded and Instagram opened. Upload image and paste your caption.",
+        status: "info",
+        duration: 5000,
+        isClosable: true,
+        position: "top",
+      });
+    } catch (shareError: unknown) {
+      const err = shareError as { name?: string };
+      if (err?.name !== "AbortError") {
+        console.error("Instagram share failed:", shareError);
+        toast({
+          title: "Could not open share",
+          description: "Use Download Image and Copy Caption instead.",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+          position: "top",
+        });
+      }
+    } finally {
+      setIsPosting(false);
+    }
+  }
 
   return !hasStarted ? (
     
@@ -353,8 +277,8 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
     textAlign="center" // Centers the text inside the Text component
     wordBreak="break-word" // Ensures long words do not overflow
   >
-    At the crossroads of art and technology lies a first-of-its-kind NFT collection where you can 
-    own a unique visual rendering of unfolding history. The combination of sublime imagery and the 
+    At the crossroads of art and technology lies a first-of-its-kind art collection where you can 
+    create a unique visual rendering of unfolding history. The combination of sublime imagery and the 
     unfiltered hope and horror of our modern world converges with the power of generative AI to 
     transform a headline into a piece of digital history.
   </Text>
@@ -416,59 +340,6 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
     
     
     <Stack gap={4} align="center">
-    {publicKey && (
-  <Box
-    maxW={['90%', '80%', 'md']}
-    mx="auto"
-    p={[2, 4]}
-    borderWidth="1"
-    borderRadius="md"
-    boxShadow="0px 4px 10px rgba(0, 0, 0, 0.5)" // Darker shadow for better visibility
-  >
-    <Text
-      maxW="80%"
-      mx="auto"
-      textAlign="center"
-      wordBreak="break-word"
-    >
-      {publicKey.toBase58()}
-    </Text>
-  </Box>
-)}
-
-{publicKey ? (
-  // Show the Disconnect button if a wallet is connected
-  <Button onClick={disconnect} bgGradient="linear(to-r, #9945FF, #14F195)">Disconnect Wallet</Button>
-) : (
-  // Show Connect buttons if no wallet is connected
-  wallets.filter((wallet) => wallet.readyState === "Installed").length > 0 ? (
-    wallets
-      .filter((wallet) => wallet.readyState === "Installed")
-      .map((wallet) => (
-        <Button
-          key={wallet.adapter.name}
-          onClick={() => select(wallet.adapter.name)}
-          bgGradient="linear(to-r, #9945FF, #14F195)"
-          w="64"
-          size="lg"
-          fontSize="md"
-          leftIcon={
-            <Image
-              src={wallet.adapter.icon}
-              alt={wallet.adapter.name}
-              h={6}
-              w={6}
-            />
-          }
-        >
-          {wallet.adapter.name}
-        </Button>
-      ))
-  ) : (
-    // Show a message if no wallets are installed
-    <Text>No wallet found. Please download a supported Solana wallet</Text>
-  )
-)}
 
       <Text style={{
           maxWidth: '80%',
@@ -666,7 +537,7 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
     isLoading={isGenerating}
     loadingText="Generating Image"
     bgGradient="linear(to-r, #9945FF, #14F195)"
-    isDisabled={isMinting}
+    isDisabled={isPosting}
   >
     Generate Image
   </Button>
@@ -716,94 +587,56 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
     <h2>
       <AccordionButton _expanded={{ bgGradient: "linear(to-r, #9945FF, #14F195)", color: 'white' }}>
         <Box>
-          Mint
+          Post
         </Box>
-  
       </AccordionButton>
     </h2>
     <AccordionPanel pb={4}>
-    <Box
-      maxW="md"
-      mx="auto"
-      p={4}
-      borderWidth="1"
-      borderRadius="md"
-      boxShadow="0px 4px 10px rgba(0, 0, 0, 0.5)" // Darker shadow for better visibility
-    >
-      <Text
-        maxW="80%"
-        mx="auto"
-        textAlign="center"
-        wordBreak="break-word"
-      >
-        {selectedHeadline && selectedStyle && (
-          <Text>An interpretation of &apos;{selectedHeadline}&apos; inspired by the {selectedStyle} style.</Text>
-        )}
-      </Text>
-    </Box>
-      <br />
-    <Box style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          textAlign: "center"
-        }}>
-    {imageSrc && <Image src={imageSrc} alt="Generated Image" />}
-    </Box>
-        <br />
-    <Box>
-    {scores1 && (
       <Box
         maxW="md"
         mx="auto"
         p={4}
         borderWidth="1"
         borderRadius="md"
-        boxShadow="0px 4px 10px rgba(0, 0, 0, 0.5)" // Updated darker shadow
+        boxShadow="0px 4px 10px rgba(0, 0, 0, 0.5)"
       >
-        <Text fontWeight="bold" mb={2}>Attributes:</Text>
-        <Text>Global Impact: {scores1.globalImpact.toFixed(2)}</Text>
-        <Text>Longevity: {scores1.longevity.toFixed(2)}</Text>
-        <Text>Cultural Significance: {scores1.culturalSignificance.toFixed(2)}</Text>
-        <Text>Media Coverage: {scores1.mediaCoverage.toFixed(2)}</Text>
-        {/* Uncomment to display price if needed */}
-        {/* <Text fontSize="xl" mt={4} fontWeight="bold">Price: {price.toFixed(2)} SOL</Text> */}
-      </Box>
-    )}
-    <br />
-
-    {publicKey && price !== null ? (
-      <Button 
-        onClick={() => {
-          if (imageFile && selectedHeadline && selectedStyle && scores1 && frontEndKey && !isMinting) {
-            handleMint(imageFile, selectedHeadline, selectedStyle, frontEndKey, scores1);
-          } else if (!imageFile || !selectedHeadline || !selectedStyle || !scores1 || !frontEndKey) {
-            console.error("Required data is missing for minting");
-          }
-        }}
-        bgGradient="linear(to-r, #9945FF, #14F195)"
-        isLoading={isMinting}
-        loadingText="Minting..."
-        isDisabled={isGenerating}
-      >
-        {isMinting ? 'Minting...' : `Mint for ${price.toFixed(2)} SOL`}
-      </Button>
-    ) : (
-      <Button 
-        isDisabled={!publicKey || price === null}
-        bgGradient="linear(to-r, #9945FF, #14F195)"
-      >
-        {publicKey ? 'Mint' : 'Connect Wallet to Mint'}
-      </Button>
-    )}
+        <Text textAlign="center" mb={3}>
+          {imageFile
+            ? "Post directly from your browser. On mobile, this opens your share sheet where you can pick Instagram."
+            : "Generate an image first, then post to Instagram."}
+        </Text>
+        {imageSrc && <Image src={imageSrc} alt="Ready to post" display="block" mx="auto" mb={4} maxW="100%" />}
+        <Text mb={2} fontWeight="bold" textAlign="left">
+          Caption
+        </Text>
+        <Textarea
+          value={caption}
+          onChange={(event) => setCaption(event.target.value)}
+          placeholder="Write your caption..."
+          rows={6}
+          mb={4}
+        />
+        <HStack spacing={3} justifyContent="center" flexWrap="wrap">
+          <Button
+            onClick={postToInstagram}
+            bgGradient="linear(to-r, #9945FF, #14F195)"
+            isLoading={isPosting}
+            loadingText="Opening..."
+            isDisabled={!imageFile || isGenerating}
+          >
+            Share
+          </Button>
+          <Button onClick={copyCaption} isDisabled={!caption.trim()}>
+            Copy Caption
+          </Button>
+          <Button onClick={downloadImage} isDisabled={!imageFile}>
+            Download Image
+          </Button>
+        </HStack>
       </Box>
     </AccordionPanel>
   </AccordionItem>
   </Accordion>
-  
-    {isOwner && (   
-      <Button onClick={generateSpecialLink} bgGradient="linear(to-r, #9945FF, #14F195)">Generate Referral Link</Button>
-    )}
 
 <footer style={{ textAlign: 'center', paddingTop: '20px' }}>
   <p style={{ marginBottom: '2px', fontWeight: 'bold', fontSize: '1rem', background: 'linear-gradient(to right, #9945FF, #14F195)', WebkitBackgroundClip: 'text',
