@@ -118,8 +118,12 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
     });
 
     if (!response.ok) {
-      const errorMessage = `HuggingFace error! Status: ${response.status}`;
-      setError(errorMessage);  // Set the error state to display the message
+      const errorPayload = await response.json().catch(() => null);
+      const errorMessage =
+        errorPayload?.details
+          ? `${errorPayload.error}: ${errorPayload.details}`
+          : errorPayload?.error || `Image generation failed. Status: ${response.status}`;
+      setError(errorMessage);
       throw new Error(errorMessage);
     }
 

@@ -51,6 +51,23 @@ const finalPrice = average;
 return finalPrice;
 };
 
+async function generateImageWithOpenAI(openai: OpenAI, prompt: string) {
+    const imageResponse = await openai.images.generate({
+        model: 'dall-e-3',
+        prompt,
+        n: 1,
+        response_format: 'b64_json',
+        size: '1024x1024'
+    });
+
+    const base64Image = imageResponse.data?.[0]?.b64_json;
+    if (!base64Image) {
+        throw new Error('OpenAI image generation returned no image data');
+    }
+
+    return base64Image;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'POST') {
         return res.status(405).end('Method Not Allowed');
@@ -163,7 +180,7 @@ Media Coverage: 0.01-0.2 (limited), 0.21-0.5 (moderate), 0.51-0.8 (extensive), 0
     }
 
     try {
-                console.log('Making API call to Hugging Face with prompt:', currentPrompt);
+        console.log('Making API call to Hugging Face with prompt:', currentPrompt);
         const response = await fetch(hfApiEndpoint, {
            method: 'POST',
            headers: {
@@ -177,10 +194,48 @@ Media Coverage: 0.01-0.2 (limited), 0.21-0.5 (moderate), 0.51-0.8 (extensive), 0
         if (!response.ok) {
            const errorBody = await response.text();  // Use text first to avoid JSON parse errors
            console.log('API call failed, response body:', errorBody);
-                     if (response.status === 429) {
-                         return res.status(429).json({ error: 'Hugging Face rate limit exceeded' });
-                     }
-                     return res.status(response.status).json({ error: 'Hugging Face error', details: errorBody });
+
+           const isDeprecatedModel =
+               response.status === 410 &&
+               /deprecated/i.test(errorBody) &&
+               /no longer supported/i.test(errorBody);
+
+           if (isDeprecatedModel) {
+               console.warn('Hugging Face model is deprecated. Falling back to OpenAI image generation.');
+               try {
+                   const base64Image = await generateImageWithOpenAI(openai, currentPrompt);
+                   return res.status(200).json({ image: base64Image, scores, price });
+               } catch (error: unknown) {
+                   const e = error as { status?: number; code?: string; error?: { code?: string; message?: string }; message?: string };
+                   const status = e?.status;
+                   const code = e?.error?.code || e?.code;
+                   const message = e?.message || e?.error?.message || 'OpenAI image generation error';
+                   console.error('OpenAI image fallback error:', { status, code, message });
+
+                   if (status === 429 || code === 'insufficient_quota') {
+                       return res.status(429).json({ error: 'OpenAI image generation rate limit/quota exceeded' });
+                   }
+                   if (status === 401) {
+                       return res.status(401).json({ error: 'Invalid OpenAI API key or unauthorized for image generation' });
+                   }
+                   if (status === 404) {
+                       return res.status(404).json({ error: 'Requested OpenAI image model not available' });
+                   }
+                   if (status && status >= 500) {
+                       return res.status(502).json({ error: 'Upstream OpenAI image generation error' });
+                   }
+
+                   return res.status(502).json({
+                       error: 'Hugging Face model is deprecated and OpenAI fallback failed',
+                       details: message
+                   });
+               }
+           }
+
+           if (response.status === 429) {
+               return res.status(429).json({ error: 'Hugging Face rate limit exceeded' });
+           }
+           return res.status(response.status).json({ error: 'Hugging Face error', details: errorBody });
         }
 
         const buffer = await response.arrayBuffer();
