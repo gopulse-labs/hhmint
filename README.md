@@ -31,7 +31,7 @@ The project originally included NFT minting; the active UI has been migrated to 
    - Frontend posts `{ selectedStyle, selectedHeadline }` to `POST /api/generateImage`.
    - Backend does two AI steps:
      - OpenAI (`gpt-4o-mini`) scores the headline on 4 attributes (`globalImpact`, `longevity`, `culturalSignificance`, `mediaCoverage`).
-     - Hugging Face Inference endpoint generates the image from a randomized style/headline prompt template.
+     - OpenAI Images (`gpt-image-2` by default) generates the image from a randomized style/headline prompt template.
    - Backend returns:
      - `image` (base64 PNG)
      - `scores`
@@ -72,13 +72,12 @@ The project originally included NFT minting; the active UI has been migrated to 
 - Next.js API routes (`src/pages/api/*`) running in Node.js runtime
 - `@vercel/node` types for request/response typing
 - `axios` for HTTP requests
-- `node-fetch` for Hugging Face image generation call
 - `xml2js` for RSS parsing
 
 ### AI and external services
 
 - OpenAI Node SDK (`openai`) for headline scoring
-- Hugging Face Inference endpoint (`HF_API_ENDPOINT`) for image generation
+- OpenAI Images API (`gpt-image-2` by default) for image generation
 - Google News RSS feed for headline source data
 
 ### Browser APIs used by the share workflow
@@ -105,7 +104,7 @@ These packages and route are still present, but not used by the active UI flow:
 - `src/pages/api/getNews.ts`
   - Google News RSS fetch + parse.
 - `src/pages/api/generateImage.ts`
-  - OpenAI scoring + Hugging Face image generation.
+  - OpenAI scoring + OpenAI image generation.
 - `src/pages/api/mintHH.ts`
   - Legacy NFT minting backend path (not called by current UI).
 
@@ -114,11 +113,19 @@ These packages and route are still present, but not used by the active UI flow:
 Defined in local `.env`:
 
 - `OPENAI_API_KEY`
-  - Required for headline scoring in `/api/generateImage`.
-- `HF_API`
-  - Required authorization header/token for Hugging Face inference.
-- `HF_API_ENDPOINT`
-  - Required model inference URL.
+  - Required for headline scoring in `/api/generateImage`; also used for image generation when `OPENAI_IMAGE_API_KEY` is not set.
+- `OPENAI_IMAGE_API_KEY`
+  - Optional dedicated key for OpenAI image generation.
+- `OPENAI_IMAGE_MODEL`
+  - Optional image model override. Defaults to `gpt-image-2`.
+- `OPENAI_IMAGE_SIZE`
+  - Optional image size override. Defaults to `1024x1024`.
+- `OPENAI_IMAGE_QUALITY`
+  - Optional image quality override. Defaults to `low` to keep preview requests below serverless timeout limits.
+- `OPENAI_IMAGE_FORMAT`
+  - Optional image format override. Defaults to `jpeg` for lower latency.
+- `OPENAI_IMAGE_COMPRESSION`
+  - Optional JPEG/WebP compression override. Defaults to `85`.
 
 Legacy/optional for NFT path:
 

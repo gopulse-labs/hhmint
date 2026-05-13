@@ -39,6 +39,22 @@ Created with HeadlineHarmonies.
 #HeadlineHarmonies #AIArt #DigitalArt #NewsArt #${styleTag}`;
 }
 
+function WebsiteIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      style={{ margin: '0 10px', width: '24px', height: '24px', color: 'white' }}
+    >
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M3.75 9h16.5M3.75 15h16.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M12 3c2.25 2.35 3.4 5.35 3.4 9S14.25 18.65 12 21c-2.25-2.35-3.4-5.35-3.4-9S9.75 5.35 12 3Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <circle cx="5.5" cy="12" r="1.15" fill="currentColor" />
+      <circle cx="18.5" cy="12" r="1.15" fill="currentColor" />
+    </svg>
+  );
+}
+
 const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   const [news, setNews] = useState<string[]>([]);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -128,9 +144,11 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
     }
 
     const data = await response.json();
+    const imageMimeType = data.imageMimeType || 'image/png';
+    const imageExtension = imageMimeType === 'image/jpeg' ? 'jpg' : imageMimeType.split('/')[1] || 'png';
 
     console.log("scores and price: " + data.scores, data.price)
-    setImageSrc(`data:image/png;base64,${data.image}`);
+    setImageSrc(`data:${imageMimeType};base64,${data.image}`);
 
     setScores(data.scores);  // Update scores state
 
@@ -149,8 +167,8 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
            byteArrays.push(byteArray);
        }
 
-       const blob = new Blob(byteArrays, {type: 'image/png'});
-       const file = new File([blob], 'generated_image.png', { type: 'image/png' });
+       const blob = new Blob(byteArrays, {type: imageMimeType});
+       const file = new File([blob], `generated_image.${imageExtension}`, { type: imageMimeType });
 
        setImageFile(file);
        if (selectedHeadline && selectedStyle) {
@@ -299,33 +317,26 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
       Get Started
     </Button>
       
-      <footer style={{ textAlign: 'center', paddingTop: '20px' }}>
-  <p style={{ marginBottom: '2px', fontWeight: 'bold', fontSize: '1rem', background: 'linear-gradient(to right, #9945FF, #14F195)', WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent' }}>HeadlineHarmonies</p>
-  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2px' }}>
-    <a href="https://x.com/HdlnHarmonies" target="_blank" rel="noopener noreferrer">
-      <FontAwesomeIcon icon={faTwitter} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
-    </a>
-    <a href="https://github.com/gopulse-labs/hhmint" target="_blank" rel="noopener noreferrer">
-      <FontAwesomeIcon icon={faGithub} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
-    </a>
-  </div>
-  <p style={{ marginTop: '20px', fontWeight: 'bold', fontSize: '1rem', background: 'linear-gradient(to right, #9945FF, #14F195)', WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent' }}>Presented by Thomas DeVito</p>
-  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2px' }}>
-    <a href="https://x.com/thomasfdevito" target="_blank" rel="noopener noreferrer">
-      <FontAwesomeIcon icon={faTwitter} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
-    </a>
-    <a href="https://telegram.com" target="_blank" rel="noopener noreferrer">
-      <FontAwesomeIcon icon={faTelegram} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
-    </a>
-    <a href="https://www.linkedin.com/in/tdevito" target="_blank" rel="noopener noreferrer">
-      <FontAwesomeIcon icon={faLinkedin} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
-    </a>
-    <a href="https://github.com/tommyd2377" target="_blank" rel="noopener noreferrer">
-      <FontAwesomeIcon icon={faGithub} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
-    </a>
-  </div>
+	      <footer style={{ textAlign: 'center', paddingTop: '20px' }}>
+	  <p style={{ marginTop: '0', fontWeight: 'bold', fontSize: '1rem', background: 'linear-gradient(to right, #9945FF, #14F195)', WebkitBackgroundClip: 'text',
+	    WebkitTextFillColor: 'transparent' }}>Presented by Thomas DeVito</p>
+		  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '10px' }}>
+	    <a href="https://thomasdevito.me/" target="_blank" rel="noopener noreferrer">
+	      <WebsiteIcon />
+	    </a>
+	    <a href="https://x.com/thomasfdevito" target="_blank" rel="noopener noreferrer">
+	      <FontAwesomeIcon icon={faTwitter} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
+	    </a>
+	    <a href="https://t.me/doubting_tom" target="_blank" rel="noopener noreferrer">
+	      <FontAwesomeIcon icon={faTelegram} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
+	    </a>
+	    <a href="https://www.linkedin.com/in/tdevito" target="_blank" rel="noopener noreferrer">
+	      <FontAwesomeIcon icon={faLinkedin} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
+	    </a>
+	    <a href="https://github.com/tommyd2377" target="_blank" rel="noopener noreferrer">
+	      <FontAwesomeIcon icon={faGithub} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
+	    </a>
+	  </div>
   <br />
   <div style={{
   fontFamily: 'Arial, sans-serif',
@@ -643,32 +654,25 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
   </Accordion>
 
 <footer style={{ textAlign: 'center', paddingTop: '20px' }}>
-  <p style={{ marginBottom: '2px', fontWeight: 'bold', fontSize: '1rem', background: 'linear-gradient(to right, #9945FF, #14F195)', WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent' }}>HeadlineHarmonies</p>
-  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2px' }}>
-    <a href="https://x.com/HdlnHarmonies" target="_blank" rel="noopener noreferrer">
-      <FontAwesomeIcon icon={faTwitter} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
-    </a>
-    <a href="https://github.com/gopulse-labs/hhmint" target="_blank" rel="noopener noreferrer">
-      <FontAwesomeIcon icon={faGithub} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
-    </a>
-  </div>
-  <p style={{ marginTop: '20px', fontWeight: 'bold', fontSize: '1rem', background: 'linear-gradient(to right, #9945FF, #14F195)', WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent' }}>Presented by Thomas DeVito</p>
-  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2px' }}>
-    <a href="https://x.com/thomasfdevito" target="_blank" rel="noopener noreferrer">
-      <FontAwesomeIcon icon={faTwitter} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
-    </a>
-    <a href="https://telegram.com" target="_blank" rel="noopener noreferrer">
-      <FontAwesomeIcon icon={faTelegram} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
-    </a>
-    <a href="https://www.linkedin.com/in/tdevito" target="_blank" rel="noopener noreferrer">
-      <FontAwesomeIcon icon={faLinkedin} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
-    </a>
-    <a href="https://github.com/tommyd2377" target="_blank" rel="noopener noreferrer">
-      <FontAwesomeIcon icon={faGithub} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
-    </a>
-  </div>
+	  <p style={{ marginTop: '0', fontWeight: 'bold', fontSize: '1rem', background: 'linear-gradient(to right, #9945FF, #14F195)', WebkitBackgroundClip: 'text',
+	    WebkitTextFillColor: 'transparent' }}>Presented by Thomas DeVito</p>
+		  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '10px' }}>
+	    <a href="https://thomasdevito.me/" target="_blank" rel="noopener noreferrer">
+	      <WebsiteIcon />
+	    </a>
+	    <a href="https://x.com/thomasfdevito" target="_blank" rel="noopener noreferrer">
+	      <FontAwesomeIcon icon={faTwitter} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
+	    </a>
+	    <a href="https://t.me/doubting_tom" target="_blank" rel="noopener noreferrer">
+	      <FontAwesomeIcon icon={faTelegram} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
+	    </a>
+	    <a href="https://www.linkedin.com/in/tdevito" target="_blank" rel="noopener noreferrer">
+	      <FontAwesomeIcon icon={faLinkedin} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
+	    </a>
+	    <a href="https://github.com/tommyd2377" target="_blank" rel="noopener noreferrer">
+	      <FontAwesomeIcon icon={faGithub} style={{ margin: '0 10px', fontSize: '24px', color: 'white' }} />
+	    </a>
+	  </div>
   <br />
   <div style={{
   fontFamily: 'Arial, sans-serif',

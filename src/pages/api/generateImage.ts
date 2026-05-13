@@ -1,6 +1,5 @@
 /* eslint-disable prefer-const */
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import fetch from 'node-fetch';
 import OpenAI from "openai";
 
 interface Scores {
@@ -19,8 +18,11 @@ let scores: Scores = {
 
 let price = 0;
 
-const DEFAULT_HF_IMAGE_MODEL = 'black-forest-labs/FLUX.1-schnell';
-const DEFAULT_HF_API_ENDPOINT = `https://router.huggingface.co/hf-inference/models/${DEFAULT_HF_IMAGE_MODEL}`;
+const DEFAULT_OPENAI_IMAGE_MODEL = 'gpt-image-2';
+const DEFAULT_OPENAI_IMAGE_SIZE = '1024x1024';
+const DEFAULT_OPENAI_IMAGE_QUALITY = 'low';
+const DEFAULT_OPENAI_IMAGE_FORMAT = 'jpeg';
+const DEFAULT_OPENAI_IMAGE_COMPRESSION = 85;
 const SCORE_KEYS: Array<keyof Scores> = ['globalImpact', 'longevity', 'culturalSignificance', 'mediaCoverage'];
 const DISALLOWED_SCORE_FLOORS = new Set([0.21, 0.51, 0.81]);
 
@@ -122,10 +124,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log("style: " + selectedStyle);
     console.log("headline: " + selectedHeadline);
 
+        const openAiApiKey = process.env.OPENAI_API_KEY?.trim();
         const shouldUseOpenAiScoring =
-            process.env.ENABLE_OPENAI_SCORING !== 'false' && !!process.env.OPENAI_API_KEY;
-        const openai = shouldUseOpenAiScoring && process.env.OPENAI_API_KEY
-            ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+            process.env.ENABLE_OPENAI_SCORING !== 'false' && !!openAiApiKey;
+        const openai = shouldUseOpenAiScoring && openAiApiKey
+            ? new OpenAI({ apiKey: openAiApiKey })
             : null;
 
         // Headline scoring is optional. If OpenAI is disabled/unavailable, continue with conservative defaults.
@@ -222,70 +225,42 @@ Rules:
     // Choose a random prompt for variation or cycle through them in some manner
     const currentPrompt = prompts[Math.floor(Math.random() * prompts.length)];
 
-    let hfApiEndpoint = process.env.HF_API_ENDPOINT?.trim() || DEFAULT_HF_API_ENDPOINT;
-    const hfApiKey = process.env.HF_API;
+    const openAiImageApiKey = process.env.OPENAI_IMAGE_API_KEY?.trim() || openAiApiKey;
+    const imageModel = process.env.OPENAI_IMAGE_MODEL?.trim() || DEFAULT_OPENAI_IMAGE_MODEL;
+    const imageSize = process.env.OPENAI_IMAGE_SIZE?.trim() || DEFAULT_OPENAI_IMAGE_SIZE;
+    const imageQuality = process.env.OPENAI_IMAGE_QUALITY?.trim() || DEFAULT_OPENAI_IMAGE_QUALITY;
+    const imageFormat = process.env.OPENAI_IMAGE_FORMAT?.trim() || DEFAULT_OPENAI_IMAGE_FORMAT;
+    const imageCompression = Number(process.env.OPENAI_IMAGE_COMPRESSION || DEFAULT_OPENAI_IMAGE_COMPRESSION);
+    const imageMimeType = `image/${imageFormat === 'jpg' ? 'jpeg' : imageFormat}`;
 
-    // Backward-compat: rewrite old deprecated endpoint at runtime if present
-    if (hfApiEndpoint && hfApiEndpoint.includes('api-inference.huggingface.co')) {
-        hfApiEndpoint = hfApiEndpoint.replace('https://api-inference.huggingface.co/', 'https://router.huggingface.co/hf-inference/');
-        console.log('Rewrote HF endpoint to Inference Providers router:', hfApiEndpoint);
-    }
-
-    // Backward-compat: auto-upgrade known deprecated image model.
-    if (hfApiEndpoint.includes('/models/stabilityai/stable-diffusion-xl-base-1.0')) {
-        console.warn('Configured Hugging Face model is deprecated. Switching to:', DEFAULT_HF_IMAGE_MODEL);
-        hfApiEndpoint = DEFAULT_HF_API_ENDPOINT;
-    }
-
-    // Avoid logging secrets
-    console.log(`Hugging Face API Endpoint: ${hfApiEndpoint}`);
-
-    if (!hfApiEndpoint || !hfApiKey) {
-        console.error('Hugging Face API endpoint or key is not configured.');
+    if (!openAiImageApiKey) {
+        console.error('OpenAI image API key is not configured.');
         return res.status(500).json({ error: 'Server configuration error' });
     }
 
     try {
-        console.log('Making API call to Hugging Face with prompt:', currentPrompt);
-        const response = await fetch(hfApiEndpoint, {
-           method: 'POST',
-           headers: {
-               'Authorization': `${hfApiKey}`,
-               'Content-Type': 'application/json'
-           },
-           body: JSON.stringify({ inputs: currentPrompt })
-        });
-        console.log('API call complete, response status:', response.status);
-        
-        if (!response.ok) {
-           const errorBody = await response.text();  // Use text first to avoid JSON parse errors
-           console.log('API call failed, response body:', errorBody);
+        console.log('Making OpenAI image API call with prompt:', currentPrompt);
+        console.log('OpenAI image options:', { imageModel, imageSize, imageQuality, imageFormat });
+        const openaiImages = new OpenAI({ apiKey: openAiImageApiKey });
+        const imageResponse = await openaiImages.images.generate({
+            model: imageModel,
+            prompt: currentPrompt,
+            n: 1,
+            size: imageSize,
+            quality: imageQuality,
+            output_format: imageFormat,
+            output_compression: imageCompression
+        } as any);
 
-           const isDeprecatedModel =
-               response.status === 410 &&
-               /deprecated/i.test(errorBody) &&
-               /no longer supported/i.test(errorBody);
+        const base64Image = imageResponse.data?.[0]?.b64_json;
 
-           if (isDeprecatedModel) {
-               console.warn('Hugging Face model is deprecated:', hfApiEndpoint);
-               return res.status(410).json({
-                   error: 'Configured Hugging Face model is deprecated',
-                   details: errorBody,
-                   suggestedModel: DEFAULT_HF_IMAGE_MODEL
-               });
-           }
-
-           if (response.status === 429) {
-               return res.status(429).json({ error: 'Hugging Face rate limit exceeded' });
-           }
-           return res.status(response.status).json({ error: 'Hugging Face error', details: errorBody });
+        if (!base64Image) {
+            console.error('OpenAI image API response did not include base64 image data.');
+            return res.status(502).json({ error: 'OpenAI image generation returned no image data' });
         }
 
-        const buffer = await response.arrayBuffer();
-        console.log('Response buffer received, size:', buffer.byteLength);
-        const base64Image = Buffer.from(buffer).toString('base64');
-        console.log('Image converted to Base64');
-    res.status(200).json({ image: base64Image, scores, price });
+        console.log('OpenAI image generation complete');
+        res.status(200).json({ image: base64Image, imageMimeType, scores, price });
         } catch (error) {
             console.error('Error generating image:', error);
             // Use a type guard to check if 'error' is an instance of Error
