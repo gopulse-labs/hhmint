@@ -6,7 +6,9 @@ import { VStack, Stack, Button, Image, Text, Grid, GridItem,
 export default function Document() {
   return (
     <Html lang="en">
-      <Head />
+      <Head>
+        <meta name="color-scheme" content="dark" />
+      </Head>
       
       <body >
         <Main  />

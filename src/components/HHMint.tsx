@@ -31,6 +31,28 @@ interface Scores {
   mediaCoverage: number;
 }
 
+const generationStatusCopy = [
+  { startsAtSeconds: 0, message: "Reading the headline and shaping the image prompt..." },
+  { startsAtSeconds: 8, message: "Choosing the visual direction..." },
+  { startsAtSeconds: 18, message: "Composing the first image pass..." },
+  { startsAtSeconds: 32, message: "Adding detail, color, and atmosphere..." },
+  { startsAtSeconds: 48, message: "Finalizing the render..." },
+  { startsAtSeconds: 60, message: "Still working. Larger generations can take a little longer." },
+];
+
+function getGenerationStatusMessage(elapsedSeconds: number) {
+  return generationStatusCopy.reduce((currentMessage, status) => {
+    return elapsedSeconds >= status.startsAtSeconds ? status.message : currentMessage;
+  }, generationStatusCopy[0].message);
+}
+
+const guidedSteps = [
+  "Headline",
+  "Style",
+  "Generate",
+  "Post",
+];
+
 function buildDefaultCaption(headline: string, style: string) {
   const styleTag = style.replace(/[^a-zA-Z0-9]/g, "");
   return `"${headline}" reimagined in ${style} style.
@@ -66,6 +88,8 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [generationElapsedSeconds, setGenerationElapsedSeconds] = useState(0);
+  const [activeStep, setActiveStep] = useState(0);
 
   const toast = useToast();
 
@@ -96,6 +120,12 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
 
   function handleStyleClick(style: string, id: string) {
     setSelectedStyle(style);
+    setImageSrc(null);
+    setImageFile(null);
+    setScores(null);
+    setCaption("");
+    setError(null);
+    setActiveStep(2);
     gridButtonsData.forEach(button => {
       if (button.id !== id) {
         document.getElementById(button.id)?.classList.remove('selected');
@@ -106,6 +136,12 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
 
   async function handleHeadlineClick(headline: string, index: number) {
     setSelectedHeadline(headline);
+    setImageSrc(null);
+    setImageFile(null);
+    setScores(null);
+    setCaption("");
+    setError(null);
+    setActiveStep(1);
     document.querySelectorAll('.headline-button').forEach((button) => {
         button.classList.remove('selected');
     });
@@ -116,7 +152,31 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     console.log(selectedStyle);
   }, [selectedStyle]);
 
-async function generateImage(selectedStyle: any, selectedHeadline: any) {
+  useEffect(() => {
+    if (!isGenerating) {
+      setGenerationElapsedSeconds(0);
+      return;
+    }
+
+    const startedAt = Date.now();
+    setGenerationElapsedSeconds(0);
+
+    const intervalId = window.setInterval(() => {
+      setGenerationElapsedSeconds(Math.floor((Date.now() - startedAt) / 1000));
+    }, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [isGenerating]);
+
+async function generateImage() {
+  if (!selectedHeadline || !selectedStyle) {
+    setError("Choose a headline and style first.");
+    setActiveStep(selectedHeadline ? 1 : 0);
+    return;
+  }
+
   try {
   setIsGenerating(true);
   setImageSrc(null);
@@ -175,12 +235,29 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
          setCaption(buildDefaultCaption(selectedHeadline, selectedStyle));
        }
 
+    setActiveStep(3);
     setIsGenerating(false);
   } catch (error) {
     console.error('Error fetching data:', error);
     setIsGenerating(false);
   }
 }
+
+  const maxUnlockedStep = imageFile
+    ? 3
+    : selectedHeadline && selectedStyle
+      ? 2
+      : selectedHeadline
+        ? 1
+        : 0;
+
+  function handleAccordionChange(nextIndex: number | number[]) {
+    const nextStep = Array.isArray(nextIndex) ? nextIndex[0] : nextIndex;
+
+    if (typeof nextStep === "number" && nextStep >= 0 && nextStep <= maxUnlockedStep) {
+      setActiveStep(nextStep);
+    }
+  }
 
   function downloadImage() {
     if (!imageFile) return;
@@ -306,15 +383,16 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
   </Text>
 </Box>
 
-<Button
-      bgGradient="linear(to-r, #9945FF, #14F195)"
-      w="64"
-      size="lg"
+	<Button
+	      className="hh-gradient-button"
+	      bgGradient="linear(to-r, #9945FF, #14F195)"
+	      w="64"
+	      size="lg"
       fontSize="md"
  
       onClick={getStarted}
     >
-      Get Started
+      Start Generating
     </Button>
       
 	      <footer style={{ textAlign: 'center', paddingTop: '20px' }}>
@@ -342,7 +420,7 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
   fontFamily: 'Arial, sans-serif',
   fontSize: '16px',
   textAlign: 'center',
-  color: '#333'
+  color: 'white'
 }}>
   Made with <span style={{ color: '#e25555', fontSize: '24px' }}>&hearts;</span> in NYC
 </div>
@@ -365,7 +443,44 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
       artistic masterpiece that echoes the pulse of contemporary life.
       </Text>
 
-      <Accordion allowToggle
+      <HStack
+        width="80%"
+        spacing={3}
+        justifyContent="center"
+        flexWrap="wrap"
+      >
+        {guidedSteps.map((step, index) => {
+          const isActive = activeStep === index;
+          const isComplete = index < maxUnlockedStep;
+          const isLocked = index > maxUnlockedStep;
+
+          return (
+            <Box
+              key={step}
+              minW={{ base: "120px", md: "145px" }}
+              p={3}
+              borderWidth="1px"
+              borderRadius="md"
+              borderColor={isActive ? "#14F195" : "whiteAlpha.300"}
+              bg={isActive ? "whiteAlpha.200" : "whiteAlpha.100"}
+              opacity={isLocked ? 0.45 : 1}
+              textAlign="center"
+            >
+              <Text fontSize="xs" color="whiteAlpha.700">
+                Step {index + 1}
+              </Text>
+              <Text fontWeight="bold">{step}</Text>
+              <Text fontSize="xs" color="whiteAlpha.700">
+                {isActive ? "Current" : isComplete ? "Done" : isLocked ? "Locked" : "Next"}
+              </Text>
+            </Box>
+          );
+        })}
+      </HStack>
+
+      <Accordion
+       index={activeStep}
+       onChange={handleAccordionChange}
        style={{
           width: "80%",
           display: "flex",
@@ -384,6 +499,9 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
           </h2>
 
           <AccordionPanel pb={4}>
+          <Text mb={4} color="whiteAlpha.800">
+            Step 1 of 4: choose the headline you want to turn into artwork.
+          </Text>
           {selectedHeadline && (
             <Box
               maxW="md"
@@ -448,7 +566,7 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
           </AccordionPanel>
         </AccordionItem>
 
-        <AccordionItem>
+        <AccordionItem isDisabled={!selectedHeadline}>
           <h2>
             <AccordionButton _expanded={{ bgGradient: "linear(to-r, #9945FF, #14F195)", color: 'white' }}>
               <Box>
@@ -458,6 +576,9 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
             </AccordionButton>
           </h2>
           <AccordionPanel pb={4}>
+          <Text mb={4} color="whiteAlpha.800">
+            Step 2 of 4: choose the visual style that should shape the final image.
+          </Text>
           {selectedHeadline && (
             <Box
               maxW="md"
@@ -516,7 +637,7 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
           </AccordionPanel>
         </AccordionItem>
       
-    <AccordionItem>
+    <AccordionItem isDisabled={!selectedHeadline || !selectedStyle}>
     <h2>
       <AccordionButton _expanded={{ bgGradient: "linear(to-r, #9945FF, #14F195)", color: 'white' }}>
         <Box>
@@ -526,6 +647,9 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
       </AccordionButton>
     </h2>
     <AccordionPanel pb={4}>
+    <Text mb={4} color="whiteAlpha.800">
+      Step 3 of 4: review your choices, then generate your image.
+    </Text>
     <div>
     <Box
       maxW="md"
@@ -547,12 +671,13 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
       </Text>
     </Box>
     <Box padding={3}>
-  <Button
-    onClick={() => generateImage(selectedStyle, selectedHeadline)}
-    isLoading={isGenerating}
-    loadingText="Generating Image"
+	  <Button
+	    className="hh-gradient-button"
+	    onClick={generateImage}
+	    isLoading={isGenerating}
+	    loadingText="Generating Image"
     bgGradient="linear(to-r, #9945FF, #14F195)"
-    isDisabled={isPosting}
+    isDisabled={!selectedHeadline || !selectedStyle || isPosting}
   >
     Generate Image
   </Button>
@@ -563,8 +688,12 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
     <Text>Error: {error}</Text>
   </Box>
 )}
-    <Box>
-  {isGenerating && <p>Don't like the image? Click "Generate" again to try another.</p>}
+    <Box minH="24px" px={3} textAlign="center">
+  {isGenerating && (
+    <Text color="whiteAlpha.800" fontSize="sm">
+      {getGenerationStatusMessage(generationElapsedSeconds)}
+    </Text>
+  )}
     </Box>
     <Box style={{
           display: "flex",
@@ -598,7 +727,7 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
     </AccordionPanel>
   </AccordionItem>
 
-  <AccordionItem>
+  <AccordionItem isDisabled={!imageFile}>
     <h2>
       <AccordionButton _expanded={{ bgGradient: "linear(to-r, #9945FF, #14F195)", color: 'white' }}>
         <Box>
@@ -607,6 +736,9 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
       </AccordionButton>
     </h2>
     <AccordionPanel pb={4}>
+      <Text mb={4} color="whiteAlpha.800">
+        Step 4 of 4: review the image and caption, then share or download.
+      </Text>
       <Box
         maxW="md"
         mx="auto"
@@ -632,10 +764,11 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
           mb={4}
         />
         <HStack spacing={3} justifyContent="center" flexWrap="wrap">
-          <Button
-            onClick={postToInstagram}
-            bgGradient="linear(to-r, #9945FF, #14F195)"
-            isLoading={isPosting}
+	          <Button
+	            className="hh-gradient-button"
+	            onClick={postToInstagram}
+	            bgGradient="linear(to-r, #9945FF, #14F195)"
+	            isLoading={isPosting}
             loadingText="Opening..."
             isDisabled={!imageFile || isGenerating}
           >
@@ -678,7 +811,7 @@ async function generateImage(selectedStyle: any, selectedHeadline: any) {
   fontFamily: 'Arial, sans-serif',
   fontSize: '16px',
   textAlign: 'center',
-  color: '#333'
+  color: 'white'
 }}>
   Made with <span style={{ color: '#e25555', fontSize: '24px' }}>&hearts;</span> in NYC
 </div>

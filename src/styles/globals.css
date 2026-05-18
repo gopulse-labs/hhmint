@@ -1,4 +1,6 @@
 :root {
+  color-scheme: only dark;
+
   --max-width: 1100px;
   --border-radius: 12px;
   --font-mono: ui-monospace, Menlo, Monaco, 'Cascadia Mono', 'Segoe UI Mono',
@@ -103,9 +105,29 @@ a {
 
 @media (prefers-color-scheme: dark) {
   html {
-    color-scheme: dark;
+    color-scheme: only dark;
   }
 
+}
+
+.hh-gradient-button {
+  -webkit-appearance: none;
+  appearance: none;
+  color-scheme: only dark;
+  background-color: transparent !important;
+  background-image: linear-gradient(to right, #9945FF, #14F195) !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff;
+}
+
+.hh-gradient-button:hover,
+.hh-gradient-button[data-hover],
+.hh-gradient-button:active,
+.hh-gradient-button[data-active],
+.hh-gradient-button[aria-disabled="true"],
+.hh-gradient-button[data-disabled] {
+  background-color: transparent !important;
+  background-image: linear-gradient(to right, #9945FF, #14F195) !important;
 }
 
 .visible {

@@ -221,9 +221,10 @@ Rules:
         `Forge an artistic interpretation, mirroring the visual cues of ${selectedStyle}, to convey the underlying message of the headline: "${selectedHeadline}"`,
         `Sculpt an expressive artwork, embodying the stylistic nuances of ${selectedStyle}, to capture the essence of the headline: "${selectedHeadline}"`
     ];
+    const noTextInstruction = "Do not include any text, captions, lettering, readable words, logos, or watermarks in the image.";
 
     // Choose a random prompt for variation or cycle through them in some manner
-    const currentPrompt = prompts[Math.floor(Math.random() * prompts.length)];
+    const currentPrompt = `${prompts[Math.floor(Math.random() * prompts.length)]}. ${noTextInstruction}`;
 
     const openAiImageApiKey = process.env.OPENAI_IMAGE_API_KEY?.trim() || openAiApiKey;
     const imageModel = process.env.OPENAI_IMAGE_MODEL?.trim() || DEFAULT_OPENAI_IMAGE_MODEL;
