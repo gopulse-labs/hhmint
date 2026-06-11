@@ -16,6 +16,11 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { gridButtonsData } from './buttonData';
+import {
+  buildCaptionPackage,
+  formatCaptionPackageForShare,
+  type CaptionPackage,
+} from '../lib/captionPackage';
 import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTwitter, faTelegram, faLinkedin, faGithub } from '@fortawesome/free-brands-svg-icons';
@@ -53,14 +58,6 @@ const guidedSteps = [
   "Post",
 ];
 
-function buildDefaultCaption(headline: string, style: string) {
-  const styleTag = style.replace(/[^a-zA-Z0-9]/g, "");
-  return `"${headline}" reimagined in ${style} style.
-
-Created with HeadlineHarmonies.
-#HeadlineHarmonies #AIArt #DigitalArt #NewsArt #${styleTag}`;
-}
-
 function WebsiteIcon() {
   return (
     <svg
@@ -87,6 +84,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   const [isPosting, setIsPosting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
+  const [captionPackage, setCaptionPackage] = useState<CaptionPackage | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [generationElapsedSeconds, setGenerationElapsedSeconds] = useState(0);
   const [activeStep, setActiveStep] = useState(0);
@@ -124,6 +122,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     setImageFile(null);
     setScores(null);
     setCaption("");
+    setCaptionPackage(null);
     setError(null);
     setActiveStep(2);
     gridButtonsData.forEach(button => {
@@ -140,6 +139,7 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     setImageFile(null);
     setScores(null);
     setCaption("");
+    setCaptionPackage(null);
     setError(null);
     setActiveStep(1);
     document.querySelectorAll('.headline-button').forEach((button) => {
@@ -181,6 +181,7 @@ async function generateImage() {
   setIsGenerating(true);
   setImageSrc(null);
   setScores(null);
+  setCaptionPackage(null);
     setError(null);
     
     console.log(selectedHeadline, selectedStyle);
@@ -232,7 +233,12 @@ async function generateImage() {
 
        setImageFile(file);
        if (selectedHeadline && selectedStyle) {
-         setCaption(buildDefaultCaption(selectedHeadline, selectedStyle));
+         const nextCaptionPackage = buildCaptionPackage({
+           headline: selectedHeadline,
+           style: selectedStyle,
+         });
+         setCaptionPackage(nextCaptionPackage);
+         setCaption(formatCaptionPackageForShare(nextCaptionPackage));
        }
 
     setActiveStep(3);
@@ -701,7 +707,7 @@ async function generateImage() {
           alignItems: "center",
           textAlign: "center"
         }}>
-    {imageSrc && <Image src={imageSrc} alt="Generated Image" />}
+    {imageSrc && <Image src={imageSrc} alt={captionPackage?.altText || "Generated Image"} />}
     </Box>
     <br />
     {scores1 && (
@@ -752,7 +758,7 @@ async function generateImage() {
             ? "Post directly from your browser. On mobile, this opens your share sheet where you can pick Instagram."
             : "Generate an image first, then post to Instagram."}
         </Text>
-        {imageSrc && <Image src={imageSrc} alt="Ready to post" display="block" mx="auto" mb={4} maxW="100%" />}
+        {imageSrc && <Image src={imageSrc} alt={captionPackage?.altText || "Ready to post"} display="block" mx="auto" mb={4} maxW="100%" />}
         <Text mb={2} fontWeight="bold" textAlign="left">
           Caption
         </Text>
