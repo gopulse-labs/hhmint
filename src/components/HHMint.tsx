@@ -12,7 +12,6 @@ import {
   AccordionPanel,
   Box,
   HStack,
-  Textarea,
   useToast,
 } from "@chakra-ui/react";
 import { gridButtonsData } from './buttonData';
@@ -29,13 +28,6 @@ interface HHMintProps {
   userPublicKey?: string;
 }
 
-interface Scores {
-  globalImpact: number;
-  longevity: number;
-  culturalSignificance: number;
-  mediaCoverage: number;
-}
-
 const generationStatusCopy = [
   { startsAtSeconds: 0, message: "Reading the headline and shaping the image prompt..." },
   { startsAtSeconds: 8, message: "Choosing the visual direction..." },
@@ -49,6 +41,18 @@ function getGenerationStatusMessage(elapsedSeconds: number) {
   return generationStatusCopy.reduce((currentMessage, status) => {
     return elapsedSeconds >= status.startsAtSeconds ? status.message : currentMessage;
   }, generationStatusCopy[0].message);
+}
+
+function isCaptionPackage(value: unknown): value is CaptionPackage {
+  const candidate = value as CaptionPackage | null;
+
+  return Boolean(
+    candidate &&
+    typeof candidate.caption === "string" &&
+    Array.isArray(candidate.hashtags) &&
+    typeof candidate.altText === "string" &&
+    typeof candidate.suggestedFirstComment === "string"
+  );
 }
 
 const guidedSteps = [
@@ -79,7 +83,6 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [selectedHeadline, setSelectedHeadline] = useState<string | null>(null);
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
-  const [scores1, setScores] = useState<Scores | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -120,7 +123,6 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     setSelectedStyle(style);
     setImageSrc(null);
     setImageFile(null);
-    setScores(null);
     setCaption("");
     setCaptionPackage(null);
     setError(null);
@@ -137,7 +139,6 @@ const HHMint: React.FC<HHMintProps> = ({ userPublicKey }) => {
     setSelectedHeadline(headline);
     setImageSrc(null);
     setImageFile(null);
-    setScores(null);
     setCaption("");
     setCaptionPackage(null);
     setError(null);
@@ -180,7 +181,6 @@ async function generateImage() {
   try {
   setIsGenerating(true);
   setImageSrc(null);
-  setScores(null);
   setCaptionPackage(null);
     setError(null);
     
@@ -208,10 +208,7 @@ async function generateImage() {
     const imageMimeType = data.imageMimeType || 'image/png';
     const imageExtension = imageMimeType === 'image/jpeg' ? 'jpg' : imageMimeType.split('/')[1] || 'png';
 
-    console.log("scores and price: " + data.scores, data.price)
     setImageSrc(`data:${imageMimeType};base64,${data.image}`);
-
-    setScores(data.scores);  // Update scores state
 
        // Convert base64 string to a File object
        const base64Response = data.image.split(';base64,').pop();
@@ -233,10 +230,12 @@ async function generateImage() {
 
        setImageFile(file);
        if (selectedHeadline && selectedStyle) {
-         const nextCaptionPackage = buildCaptionPackage({
-           headline: selectedHeadline,
-           style: selectedStyle,
-         });
+         const nextCaptionPackage = isCaptionPackage(data.captionPackage)
+           ? data.captionPackage
+           : buildCaptionPackage({
+               headline: selectedHeadline,
+               style: selectedStyle,
+             });
          setCaptionPackage(nextCaptionPackage);
          setCaption(formatCaptionPackageForShare(nextCaptionPackage));
        }
@@ -278,22 +277,22 @@ async function generateImage() {
     URL.revokeObjectURL(url);
   }
 
-  async function copyCaption() {
-    if (!caption.trim()) return;
+  async function copyTextToClipboard(text: string, successTitle: string, warningTitle: string) {
+    if (!text.trim()) return;
 
     try {
-      await navigator.clipboard.writeText(caption);
+      await navigator.clipboard.writeText(text);
       toast({
-        title: "Caption copied",
+        title: successTitle,
         status: "success",
         duration: 2500,
         isClosable: true,
         position: "top",
       });
     } catch (copyError) {
-      console.error("Could not copy caption:", copyError);
+      console.error(warningTitle, copyError);
       toast({
-        title: "Could not copy caption",
+        title: warningTitle,
         description: "You can still copy it manually from the text box.",
         status: "warning",
         duration: 3500,
@@ -301,6 +300,18 @@ async function generateImage() {
         position: "top",
       });
     }
+  }
+
+  async function copyCaption() {
+    await copyTextToClipboard(caption, "Caption copied", "Could not copy caption");
+  }
+
+  async function copySuggestedFirstComment() {
+    await copyTextToClipboard(
+      captionPackage?.suggestedFirstComment || "",
+      "Suggested comment copied",
+      "Could not copy suggested comment"
+    );
   }
 
   async function postToInstagram() {
@@ -444,9 +455,8 @@ async function generateImage() {
           maxWidth: '80%',
           wordWrap: 'break-word',
           textAlign: 'center',
-        }}>
-      Using your chosen headline and visual style, any current event can be transformed into an 
-      artistic masterpiece that echoes the pulse of contemporary life.
+      }}>
+      Choose a headline and a visual style, then turn the story into an image you can share.
       </Text>
 
       <HStack
@@ -672,7 +682,9 @@ async function generateImage() {
         wordBreak="break-word"
       >
         {selectedHeadline && selectedStyle && (
-          <Text>An interpretation of &apos;{selectedHeadline}&apos; inspired by the {selectedStyle} style.</Text>
+          <Text>
+            Ready to turn &apos;{selectedHeadline}&apos; into a {selectedStyle.toLowerCase()} image.
+          </Text>
         )}
       </Text>
     </Box>
@@ -710,25 +722,6 @@ async function generateImage() {
     {imageSrc && <Image src={imageSrc} alt={captionPackage?.altText || "Generated Image"} />}
     </Box>
     <br />
-    {scores1 && (
-      <Box
-        maxW="md"
-        mx="auto"
-        p={4}
-        borderWidth="1"
-        borderRadius="md"
-        boxShadow="0px 4px 10px rgba(0, 0, 0, 0.5)" // Updated darker shadow
-      >
-        <Text fontWeight="bold" mb={2}>Attributes:</Text>
-        <Text>Global Impact: {scores1.globalImpact.toFixed(2)}</Text>
-        <Text>Longevity: {scores1.longevity.toFixed(2)}</Text>
-        <Text>Cultural Significance: {scores1.culturalSignificance.toFixed(2)}</Text>
-        <Text>Media Coverage: {scores1.mediaCoverage.toFixed(2)}</Text>
-        {/* Uncomment to display price if needed */}
-        {/* <Text fontSize="xl" mt={4} fontWeight="bold">Price: {price.toFixed(2)} SOL</Text> */}
-      </Box>
-    )}
-   
     </div>
     </AccordionPanel>
   </AccordionItem>
@@ -753,22 +746,49 @@ async function generateImage() {
         borderRadius="md"
         boxShadow="0px 4px 10px rgba(0, 0, 0, 0.5)"
       >
-        <Text textAlign="center" mb={3}>
-          {imageFile
-            ? "Post directly from your browser. On mobile, this opens your share sheet where you can pick Instagram."
-            : "Generate an image first, then post to Instagram."}
-        </Text>
         {imageSrc && <Image src={imageSrc} alt={captionPackage?.altText || "Ready to post"} display="block" mx="auto" mb={4} maxW="100%" />}
         <Text mb={2} fontWeight="bold" textAlign="left">
           Caption
         </Text>
-        <Textarea
-          value={caption}
-          onChange={(event) => setCaption(event.target.value)}
-          placeholder="Write your caption..."
-          rows={6}
+        <Box
+          aria-label="Generated caption"
+          bg="whiteAlpha.100"
+          borderLeftWidth="3px"
+          borderLeftColor="#14F195"
           mb={4}
-        />
+          p={3}
+          textAlign="left"
+        >
+          <Text whiteSpace="pre-wrap">{caption}</Text>
+        </Box>
+        {captionPackage?.suggestedFirstComment && (
+          <Box mb={4}>
+            <Text mb={1} fontWeight="bold" textAlign="left">
+              Suggested first comment
+            </Text>
+            <Text mb={2} fontSize="sm" color="whiteAlpha.700" textAlign="left">
+              Optional. Copy and paste manually after publishing.
+            </Text>
+            <Box
+              aria-label="Suggested first comment text"
+              bg="whiteAlpha.100"
+              borderLeftWidth="3px"
+              borderLeftColor="#9945FF"
+              mb={3}
+              p={3}
+              textAlign="left"
+            >
+              <Text whiteSpace="pre-wrap">{captionPackage.suggestedFirstComment}</Text>
+            </Box>
+            <Button
+              size="sm"
+              onClick={copySuggestedFirstComment}
+              isDisabled={!captionPackage.suggestedFirstComment.trim()}
+            >
+              Copy Suggested Comment
+            </Button>
+          </Box>
+        )}
         <HStack spacing={3} justifyContent="center" flexWrap="wrap">
 	          <Button
 	            className="hh-gradient-button"

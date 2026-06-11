@@ -11,25 +11,26 @@ export interface CaptionPackage {
   hashtags: string[];
   altText: string;
   suggestedFirstComment: string;
+  modelUsed?: string;
+  usedFallback?: boolean;
 }
 
-interface TopicProfile {
+interface HeadlineTheme {
   id: string;
-  plainTopic: string;
-  shortLabel: string;
-  reaction: string;
+  sourceTopic: string;
   subject: string;
   tension: string;
   hashtags: string[];
-  audienceTags: string[];
+  comments: string[];
   keywords: string[];
 }
 
 interface StyleProfile {
-  label: string;
-  visualLanguage: string;
-  mood: string;
+  captionName: string;
   hashtag: string;
+  defaultFit: string;
+  themeFits?: Record<string, string>;
+  themeComments?: Record<string, string>;
 }
 
 const GENERIC_HASHTAGS = new Set([
@@ -41,374 +42,437 @@ const GENERIC_HASHTAGS = new Set([
   "#GeneratedArt",
 ]);
 
-const TOPIC_PROFILES: TopicProfile[] = [
+const HEADLINE_THEMES: HeadlineTheme[] = [
   {
-    id: "climate",
-    plainTopic: "climate pressure and environmental change",
-    shortLabel: "climate pressure",
-    reaction: "a warning people keep trying to file away as background noise",
-    subject: "the natural system",
-    tension: "something measured in charts but felt as instability",
-    hashtags: ["#ClimateArt", "#ClimateCommunication"],
-    audienceTags: ["#ScienceCommunication"],
+    id: "iran_brinkmanship",
+    sourceTopic: "Iran, military strikes, and diplomatic talks",
+    subject: "brinkmanship",
+    tension:
+      "The headline is basically about brinkmanship: military threat on one side, diplomatic talks on the other, and uncertainty over which one is real.",
+    hashtags: ["#PoliticalArt", "#ForeignPolicy", "#Diplomacy", "#VisualJournalism"],
+    comments: [
+      "This one feels more like a pause than a resolution.",
+      "The peaceful part somehow feels less stable than the violent part.",
+      "The missiles and the handshake are doing most of the work here.",
+    ],
+    keywords: ["iran", "tehran", "strike", "strikes", "missile", "missiles", "talks", "diplomacy", "negotiation"],
+  },
+  {
+    id: "climate_weather",
+    sourceTopic: "climate, oceans, and extreme weather",
+    subject: "weather instability",
+    tension:
+      "The story is about weather becoming harder to treat as background: oceans, heat, and extreme conditions starting to push into everyday life.",
+    hashtags: ["#ClimateArt", "#ClimateCommunication", "#OceanScience", "#VisualJournalism"],
+    comments: [
+      "The weather feels like the main character here.",
+      "This one came out more unstable than I expected.",
+      "The chart part almost disappears once the weather starts feeling physical.",
+    ],
     keywords: [
       "climate",
+      "weather",
+      "heat",
       "warming",
-      "carbon",
-      "emissions",
       "wildfire",
       "drought",
       "flood",
       "storm",
       "hurricane",
       "ocean",
-      "sea",
+      "pacific",
       "atlantic",
-      "arctic",
-      "antarctic",
-      "glacier",
-      "environment",
+      "el nino",
+      "el niño",
       "circulation",
+      "cold blob",
     ],
   },
   {
-    id: "technology",
-    plainTopic: "technology and its human consequences",
-    shortLabel: "tech culture",
-    reaction: "a technology story with a very human nervous system underneath it",
-    subject: "the machine",
-    tension: "less like a tool than a set of choices moving faster than trust",
-    hashtags: ["#TechCulture", "#TechnologyArt"],
-    audienceTags: ["#MediaCriticism"],
-    keywords: [
-      "ai",
-      "artificial intelligence",
-      "robot",
-      "chip",
-      "semiconductor",
-      "software",
-      "data",
-      "algorithm",
-      "cyber",
-      "internet",
-      "openai",
-      "google",
-      "apple",
-      "meta",
-      "microsoft",
-      "tesla",
+    id: "space_distance",
+    sourceTopic: "space, discovery, and distance",
+    subject: "discovery and distance",
+    tension:
+      "The story is about discovery, but also distance: seeing farther without necessarily feeling closer to what is out there.",
+    hashtags: ["#ScienceArt", "#SpaceScience", "#EditorialIllustration", "#VisualJournalism"],
+    comments: [
+      "This one came out lonelier than I expected.",
+      "The telescope almost feels useless in this one.",
+      "Not sure why space always ends up feeling this private, but it fits.",
     ],
+    keywords: ["space", "nasa", "planet", "jupiter", "mars", "moon", "telescope", "webb", "hubble", "asteroid"],
   },
   {
-    id: "politics",
-    plainTopic: "political power and public trust",
-    shortLabel: "political power",
-    reaction: "a power story hiding inside procedural language",
-    subject: "the public stage",
-    tension: "a place where symbols of order keep slipping into performance",
-    hashtags: ["#PoliticalArt", "#VisualPolitics"],
-    audienceTags: ["#MediaCriticism"],
-    keywords: [
-      "election",
-      "president",
-      "congress",
-      "senate",
-      "supreme court",
-      "lawmakers",
-      "white house",
-      "governor",
-      "campaign",
-      "vote",
-      "policy",
-      "government",
-      "democrat",
-      "republican",
-      "trump",
-      "biden",
+    id: "ai_speed",
+    sourceTopic: "AI, technology, and human judgment",
+    subject: "technology moving too quickly",
+    tension:
+      "The story is about technology moving faster than people can emotionally process, with decisions getting handed to systems nobody fully understands.",
+    hashtags: ["#TechCulture", "#TechnologyArt", "#TechPolicy", "#VisualJournalism"],
+    comments: [
+      "This one feels a little too automated, which is probably right.",
+      "I like when the future looks less sleek and more breakable.",
+      "The machine part feels less confident than it should.",
     ],
+    keywords: ["ai", "artificial intelligence", "algorithm", "openai", "robot", "automation"],
   },
   {
-    id: "science",
-    plainTopic: "science, evidence, and uncertainty",
-    shortLabel: "scientific uncertainty",
-    reaction: "a science story with a little unease tucked beneath the evidence",
-    subject: "the experiment",
-    tension: "knowledge trying to hold still while the world keeps changing shape",
-    hashtags: ["#ScienceArt", "#ScienceCommunication"],
-    audienceTags: ["#EditorialIllustration"],
-    keywords: [
-      "scientist",
-      "study",
-      "research",
-      "discovery",
-      "space",
-      "nasa",
-      "planet",
-      "moon",
-      "physics",
-      "biology",
-      "medicine",
-      "health",
-      "vaccine",
-      "virus",
-      "disease",
+    id: "tech_infrastructure",
+    sourceTopic: "technology infrastructure and public life",
+    subject: "fragile technology infrastructure",
+    tension:
+      "The story is about invisible infrastructure suddenly becoming visible: chips, software, networks, and the people depending on them.",
+    hashtags: ["#TechCulture", "#TechnologyArt", "#VisualJournalism", "#EditorialIllustration"],
+    comments: [
+      "I like when the tech starts looking less sleek and more breakable.",
+      "The whole thing feels more fragile than the product language usually admits.",
+      "The machinery is doing most of the emotional work here.",
     ],
+    keywords: ["chip", "semiconductor", "software", "data", "cyber", "internet", "app", "device"],
   },
   {
-    id: "economics",
-    plainTopic: "economic pressure and public confidence",
-    shortLabel: "economic pressure",
-    reaction: "a market story that sounded more emotional than the numbers let on",
-    subject: "the economy",
-    tension: "a system of signals, pressure, and delayed consequences",
-    hashtags: ["#EconomicsArt", "#MarketCulture"],
-    audienceTags: ["#EditorialIllustration"],
-    keywords: [
-      "market",
-      "stocks",
-      "inflation",
-      "rates",
-      "fed",
-      "jobs",
-      "economy",
-      "economic",
-      "recession",
-      "tariff",
-      "trade",
-      "bank",
-      "debt",
-      "housing",
-      "price",
+    id: "court_reversal",
+    sourceTopic: "a court ruling and an overturned conviction",
+    subject: "legal reversal",
+    tension:
+      "The story is about a legal reversal: a major conviction being unsettled again, and certainty giving way to another round of doubt.",
+    hashtags: ["#CourtroomArt", "#LegalNews", "#EditorialIllustration", "#VisualJournalism"],
+    comments: [
+      "This one feels like the floor moved a little.",
+      "The blank space feels heavier than the verdict here.",
+      "The legal part feels colder than I expected.",
     ],
+    keywords: ["supreme court", "court", "ruling", "judge", "justice", "conviction", "overturns", "overturned", "murder"],
   },
   {
-    id: "culture",
-    plainTopic: "culture, attention, and public memory",
-    shortLabel: "public attention",
-    reaction: "a culture story about what people decide to notice",
-    subject: "the public imagination",
-    tension: "a mix of taste, memory, spectacle, and exhaustion",
-    hashtags: ["#CultureCriticism", "#ContemporaryCulture"],
-    audienceTags: ["#MediaCriticism"],
-    keywords: [
-      "film",
-      "music",
-      "book",
-      "museum",
-      "artist",
-      "celebrity",
-      "streaming",
-      "hollywood",
-      "culture",
-      "media",
-      "sports",
-      "fashion",
-      "history",
-      "school",
-      "university",
+    id: "race_violence_flashpoint",
+    sourceTopic: "violence, race, and public outrage",
+    subject: "a public narrative turning into a flashpoint",
+    tension:
+      "The story is about violence becoming a public argument: race, grief, outrage, and competing versions of what happened.",
+    hashtags: ["#SocialCommentary", "#RaceInAmerica", "#EditorialIllustration", "#VisualJournalism"],
+    comments: [
+      "This one feels tense even before anything happens.",
+      "The quiet parts feel louder than the obvious ones here.",
+      "I like how unresolved this one feels.",
     ],
+    keywords: ["stabbing", "racial", "race", "flashpoint", "karmelo", "anthony", "texas", "outrage"],
   },
   {
-    id: "urbanism",
-    plainTopic: "urban life and public infrastructure",
-    shortLabel: "urban systems",
-    reaction: "a city story about the systems people have to live inside",
-    subject: "the built environment",
-    tension: "infrastructure acting less like backdrop and more like fate",
-    hashtags: ["#Urbanism", "#CityFutures"],
-    audienceTags: ["#EditorialIllustration"],
-    keywords: [
-      "city",
-      "housing",
-      "transit",
-      "subway",
-      "traffic",
-      "infrastructure",
-      "mayor",
-      "urban",
-      "neighborhood",
-      "zoning",
-      "rent",
-      "bridge",
-      "rail",
+    id: "sports_comeback",
+    sourceTopic: "basketball, comeback momentum, and public emotion",
+    subject: "a comeback turning into release",
+    tension:
+      "The story is about a comeback becoming bigger than the game itself: exhaustion, momentum, and a crowd suddenly believing again.",
+    hashtags: ["#SportsArt", "#BasketballArt", "#SportsCulture", "#EditorialIllustration"],
+    comments: [
+      "The exhausted guys around the celebration are what make this one work.",
+      "This one feels like the second after everyone realizes it actually happened.",
+      "The celebration feels heavy in a good way.",
     ],
+    keywords: ["knicks", "spurs", "nba", "basketball", "game 4", "comeback", "playoff", "playoffs", "title", "athletic"],
+  },
+  {
+    id: "housing_pressure",
+    sourceTopic: "housing pressure and city life",
+    subject: "housing pressure",
+    tension:
+      "The story is about housing pressure becoming personal: rent, policy, money, and the question of who gets to stay.",
+    hashtags: ["#Urbanism", "#Housing", "#CityFutures", "#EditorialIllustration"],
+    comments: [
+      "The buildings feel like they are leaning on each other.",
+      "This one feels cramped in the right way.",
+      "The housing part feels less abstract when the walls start closing in.",
+    ],
+    keywords: ["housing", "rent", "zoning", "neighborhood", "tenant", "landlord", "affordable"],
+  },
+  {
+    id: "markets_pressure",
+    sourceTopic: "markets, prices, and household pressure",
+    subject: "economic pressure",
+    tension:
+      "The story is about numbers turning into pressure people actually feel: prices, rates, markets, and uncertainty around what comes next.",
+    hashtags: ["#EconomicsArt", "#MarketCulture", "#EconomicPolicy", "#EditorialIllustration"],
+    comments: [
+      "The money-weather thing feels weirdly right to me.",
+      "This one feels more stressful than the numbers look on paper.",
+      "The cleanest part of the image is somehow the least comforting.",
+    ],
+    keywords: ["market", "stocks", "inflation", "rates", "fed", "economy", "recession", "tariff", "trade", "bank", "debt", "prices"],
+  },
+  {
+    id: "election_pressure",
+    sourceTopic: "elections, campaigning, and public pressure",
+    subject: "campaign pressure",
+    tension:
+      "The story is about politics as pressure: votes, messaging, ambition, and the feeling that every public gesture is being staged.",
+    hashtags: ["#PoliticalArt", "#ElectionArt", "#VisualJournalism", "#EditorialIllustration"],
+    comments: [
+      "The staged part feels like the honest part here.",
+      "This one feels more like a pause before the noise starts.",
+      "The campaign energy is doing a lot of work here.",
+    ],
+    keywords: ["election", "vote", "campaign", "president", "congress", "senate", "democrat", "republican", "trump", "biden"],
+  },
+  {
+    id: "war_civilian_risk",
+    sourceTopic: "war, civilian risk, and political decision-making",
+    subject: "conflict and civilian risk",
+    tension:
+      "The story is about conflict closing in on ordinary life: weapons, borders, official language, and people caught underneath it.",
+    hashtags: ["#WarAndPeace", "#PoliticalArt", "#ForeignPolicy", "#VisualJournalism"],
+    comments: [
+      "The ordinary-life part getting squeezed is what stuck with me.",
+      "This one feels more like a warning than a scene.",
+      "The quiet parts make the violent parts feel worse.",
+    ],
+    keywords: ["war", "military", "attack", "ceasefire", "invasion", "border", "civilian"],
   },
 ];
 
-const FALLBACK_TOPIC: TopicProfile = {
-  id: "news",
-  plainTopic: "the human pressure inside the news",
-  shortLabel: "the headline",
-  reaction: "one of those news items that felt larger than its wording",
-  subject: "the headline",
-  tension: "a public story turning into a private feeling",
-  hashtags: ["#NewsVisuals", "#EditorialIllustration"],
-  audienceTags: ["#MediaCriticism"],
+const FALLBACK_THEME: HeadlineTheme = {
+  id: "general_news",
+  sourceTopic: "the story in the headline",
+  subject: "the story",
+  tension:
+    "The story is about a public event becoming hard to read cleanly: facts, framing, and the feeling that something is still unresolved.",
+  hashtags: ["#EditorialIllustration", "#VisualJournalism", "#NewsVisuals"],
+  comments: [
+    "This one came out a little more unresolved than I expected.",
+    "The image feels like it is holding something back.",
+    "I like that this does not feel fully settled.",
+  ],
   keywords: [],
 };
 
 const STYLE_PROFILES: Record<string, StyleProfile> = {
   "abstract expressionist": {
-    label: "Abstract Expressionist",
-    visualLanguage: "gesture, pressure, and unresolved motion",
-    mood: "restless",
+    captionName: "abstract-expressionist style",
     hashtag: "#AbstractExpressionism",
+    defaultFit:
+      "The abstract-expressionist style works because it lets the emotional pressure show before the literal details do.",
+    themeFits: {
+      race_violence_flashpoint:
+        "The abstract-expressionist style works because it can carry anger and panic without turning the story into a neat illustration.",
+      markets_pressure:
+        "The abstract-expressionist style works because it makes the economic pressure feel messy instead of pretending the numbers are calm.",
+    },
   },
   "art deco": {
-    label: "Art Deco",
-    visualLanguage: "symmetry, polish, and monumental geometry",
-    mood: "controlled",
+    captionName: "Art Deco style",
     hashtag: "#ArtDeco",
+    defaultFit:
+      "The Art Deco style works because its polished order makes the tension feel public, official, and a little theatrical.",
   },
   "art nouveau": {
-    label: "Art Nouveau",
-    visualLanguage: "organic curves, ornament, and fragile elegance",
-    mood: "ornate",
+    captionName: "Art Nouveau style",
     hashtag: "#ArtNouveau",
+    defaultFit:
+      "The Art Nouveau style works because its ornamental curves can make the story feel beautiful and uneasy at the same time.",
   },
   "bauhaus": {
-    label: "Bauhaus",
-    visualLanguage: "clean geometry, utility, and disciplined tension",
-    mood: "ordered",
+    captionName: "Bauhaus style",
     hashtag: "#Bauhaus",
+    defaultFit:
+      "The Bauhaus style works because it turns the story into blocks, systems, and pressure points instead of decoration.",
   },
   "baroque": {
-    label: "Baroque",
-    visualLanguage: "dramatic contrast, theatrical scale, and heavy motion",
-    mood: "charged",
+    captionName: "Baroque style",
     hashtag: "#BaroqueArt",
+    defaultFit:
+      "The Baroque style works because it makes the drama feel oversized, lit from above, and impossible to ignore.",
+    themeFits: {
+      sports_comeback:
+        "The Baroque style works because it treats the comeback like a scene of release, exhaustion, and almost religious drama.",
+    },
   },
   "classical": {
-    label: "Classical",
-    visualLanguage: "balance, proportion, and formal restraint",
-    mood: "measured",
+    captionName: "classical style",
     hashtag: "#ClassicalArt",
+    defaultFit:
+      "The classical style works because it gives the story a sense of weight, restraint, and historical consequence.",
   },
   "conceptual": {
-    label: "Conceptual",
-    visualLanguage: "ideas, absence, and objects carrying more weight than they should",
-    mood: "quietly analytical",
+    captionName: "conceptual style",
     hashtag: "#ConceptualArt",
+    defaultFit:
+      "The conceptual style works because it can make the missing pieces feel as important as the visible ones.",
   },
   "constructivist": {
-    label: "Constructivist",
-    visualLanguage: "hard diagonals, poster logic, and public urgency",
-    mood: "insistent",
+    captionName: "Constructivist style",
     hashtag: "#Constructivism",
+    defaultFit:
+      "The Constructivist style works because it makes the story feel like public messaging under stress.",
+    themeFits: {
+      iran_brinkmanship:
+        "The Constructivist style works because brinkmanship is partly about public messaging: force, warning, and persuasion all competing for the same poster.",
+      election_pressure:
+        "The Constructivist style works because campaigns already behave like posters: simple shapes trying to control a messy reality.",
+    },
   },
   "contemporary": {
-    label: "Contemporary",
-    visualLanguage: "current visual language, friction, and open-ended symbols",
-    mood: "alert",
+    captionName: "contemporary style",
     hashtag: "#ContemporaryArt",
+    defaultFit:
+      "The contemporary style works because it can keep the story current, fragmented, and unresolved.",
   },
   "cubist": {
-    label: "Cubist",
-    visualLanguage: "fractured viewpoints and overlapping planes",
-    mood: "unstable",
+    captionName: "Cubist style",
     hashtag: "#Cubism",
+    defaultFit:
+      "The Cubist style works because it shows the story from several angles at once without forcing them to agree.",
   },
   "dada": {
-    label: "Dada",
-    visualLanguage: "clipped fragments, wrong-scale objects, and interrupted logic",
-    mood: "unsettled",
+    captionName: "Dada style",
     hashtag: "#DadaArt",
+    defaultFit:
+      "The Dada style works because the story already feels fragmented, contradictory, and slightly absurd.",
+    themeFits: {
+      iran_brinkmanship:
+        "The Dada style works because threats and talks sitting side by side already feel like a collage of contradiction.",
+      election_pressure:
+        "The Dada style works because political messaging can become absurd fast when every fragment is fighting for attention.",
+    },
   },
   "expressionist": {
-    label: "Expressionist",
-    visualLanguage: "distorted forms, emotional color, and visible strain",
-    mood: "uneasy",
+    captionName: "expressionist style",
     hashtag: "#Expressionism",
+    defaultFit:
+      "The expressionist style works because it lets fear, anger, and pressure distort the scene instead of smoothing it out.",
+    themeFits: {
+      race_violence_flashpoint:
+        "The expressionist style works because it can make grief, anger, and public panic feel visible without pretending they are tidy.",
+    },
   },
   "fauvist": {
-    label: "Fauvist",
-    visualLanguage: "raw color, simplified forms, and emotional heat",
-    mood: "heightened",
+    captionName: "Fauvist style",
     hashtag: "#Fauvism",
+    defaultFit:
+      "The Fauvist style works because the color can make the emotion feel louder than the facts on the surface.",
   },
   "futurist": {
-    label: "Futurist",
-    visualLanguage: "speed, machinery, and forward motion that does not feel settled",
-    mood: "accelerated",
+    captionName: "futurist style",
     hashtag: "#Futurism",
+    defaultFit:
+      "The futurist style works because it makes motion, technology, and the promise of progress feel slightly out of control.",
+    themeFits: {
+      ai_speed:
+        "The futurist style works because it makes the future look fast, old-fashioned, and slightly out of control all at once.",
+      space_distance:
+        "The futurist style works because space stories still carry old dreams of progress, even when the future feels strange.",
+    },
   },
   "graffiti": {
-    label: "Graffiti",
-    visualLanguage: "street marks, public surfaces, and urgent color",
-    mood: "direct",
+    captionName: "graffiti style",
     hashtag: "#StreetArt",
+    defaultFit:
+      "The graffiti style works because it makes the story feel public, immediate, and written directly onto the street.",
   },
   "impressionist": {
-    label: "Impressionist",
-    visualLanguage: "soft edges, shifting light, and partial perception",
-    mood: "observational",
+    captionName: "impressionist style",
     hashtag: "#Impressionism",
+    defaultFit:
+      "The impressionist style works because it keeps the story soft-edged, like something still forming in real time.",
   },
   "minimalist": {
-    label: "Minimalist",
-    visualLanguage: "space, restraint, and only the necessary marks",
-    mood: "spare",
+    captionName: "minimalist style",
     hashtag: "#Minimalism",
+    defaultFit:
+      "The minimalist style works because it strips the story down until the silence and empty space start doing the work.",
+    themeFits: {
+      court_reversal:
+        "The minimalist style works because legal uncertainty can feel coldest when almost nothing is there.",
+      iran_brinkmanship:
+        "The minimalist style works because the threat feels sharper when the image leaves room for what has not happened yet.",
+    },
   },
   "neoclassical": {
-    label: "Neoclassical",
-    visualLanguage: "formal order, civic weight, and cool restraint",
-    mood: "ceremonial",
+    captionName: "neoclassical style",
     hashtag: "#NeoclassicalArt",
+    defaultFit:
+      "The neoclassical style works because it turns the story into a formal scene of power, consequence, and public memory.",
+    themeFits: {
+      sports_comeback:
+        "The neoclassical style works because it treats the comeback like a mythic scene without losing the exhaustion underneath it.",
+    },
   },
   "pencil drawing": {
-    label: "Pencil Drawing",
-    visualLanguage: "plain linework, visible marks, and human scale",
-    mood: "intimate",
+    captionName: "pencil-sketch style",
     hashtag: "#Drawing",
+    defaultFit:
+      "The pencil-sketch style works because it makes the whole thing feel provisional, like a tense draft rather than a settled decision.",
+    themeFits: {
+      iran_brinkmanship:
+        "The pencil-sketch style works because it makes the whole thing feel provisional, like a tense draft of history rather than a settled decision.",
+      court_reversal:
+        "The pencil-sketch style works because the story feels unresolved, like the record is still being erased and redrawn.",
+    },
+    themeComments: {
+      iran_brinkmanship: "The sketch style makes it feel like the decision is still being erased and redrawn.",
+      court_reversal: "The erased-and-redrawn feeling is doing a lot here.",
+    },
   },
   "pointillist": {
-    label: "Pointillist",
-    visualLanguage: "small marks resolving into a larger pattern",
-    mood: "patient",
+    captionName: "pointillist style",
     hashtag: "#Pointillism",
+    defaultFit:
+      "The pointillist style works because the larger picture only appears after a lot of tiny pieces start adding up.",
   },
   "pop art": {
-    label: "Pop Art",
-    visualLanguage: "bright repetition, media glare, and everyday symbols turned loud",
-    mood: "sharp",
+    captionName: "Pop Art style",
     hashtag: "#PopArt",
+    defaultFit:
+      "The Pop Art style works because it makes the public spectacle feel bright, repeated, and a little too loud.",
   },
   "realist": {
-    label: "Realist",
-    visualLanguage: "plain observation, direct surfaces, and unromantic detail",
-    mood: "grounded",
+    captionName: "realist style",
     hashtag: "#Realism",
+    defaultFit:
+      "The realist style works because it keeps the story grounded in plain details instead of letting it drift into myth.",
   },
   "renaissance": {
-    label: "Renaissance",
-    visualLanguage: "human drama, careful composition, and symbolic weight",
-    mood: "formal",
+    captionName: "Renaissance style",
     hashtag: "#RenaissanceArt",
+    defaultFit:
+      "The Renaissance style works because it gives the story a staged human drama, with every gesture carrying extra weight.",
   },
   "rococo": {
-    label: "Rococo",
-    visualLanguage: "delicate ornament, excess, and decorative tension",
-    mood: "ornamental",
+    captionName: "Rococo style",
     hashtag: "#Rococo",
+    defaultFit:
+      "The Rococo style works because the decorative excess can make the seriousness underneath feel even stranger.",
   },
   "romantic": {
-    label: "Romantic",
-    visualLanguage: "awe, scale, weather, and emotional landscape",
-    mood: "sweeping",
+    captionName: "Romantic style",
     hashtag: "#Romanticism",
+    defaultFit:
+      "The Romantic style works because it turns the story into scale, weather, and emotion instead of a clean report.",
   },
   "surrealist": {
-    label: "Surrealist",
-    visualLanguage: "dream logic, impossible scale, and quiet unease",
-    mood: "strange",
+    captionName: "surreal style",
     hashtag: "#SurrealCollage",
+    defaultFit:
+      "The surreal style works because it turns the pressure into something physical and unstable instead of just another explanation.",
+    themeFits: {
+      climate_weather:
+        "The surreal style works because it turns climate pressure into something physical and unstable instead of just another chart.",
+      space_distance:
+        "The surreal style works because it makes space feel less like a diagram and more like a private dream.",
+      ai_speed:
+        "The surreal style works because the technology already feels a little unreal, like the future arrived before anyone was ready.",
+    },
+  },
+  "abstract": {
+    captionName: "abstract style",
+    hashtag: "#AbstractIllustration",
+    defaultFit:
+      "The abstract style works because it can hold pressure, motion, and uncertainty without pretending the story is simple.",
   },
   "symbolist": {
-    label: "Symbolist",
-    visualLanguage: "emblems, allegory, and mood standing in for explanation",
-    mood: "suggestive",
+    captionName: "symbolist style",
     hashtag: "#Symbolism",
+    defaultFit:
+      "The symbolist style works because one object can carry more of the story than a literal scene would.",
   },
 };
 
@@ -418,6 +482,20 @@ function normalizeWhitespace(value: string) {
 
 function normalizeStyleKey(style: string) {
   return normalizeWhitespace(style).toLowerCase();
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function includesKeyword(text: string, keyword: string) {
+  const pattern = new RegExp(`(^|[^a-z0-9])${escapeRegExp(keyword)}([^a-z0-9]|$)`, "i");
+
+  return pattern.test(text);
+}
+
+function includesAny(text: string, keywords: string[]) {
+  return keywords.some((keyword) => includesKeyword(text, keyword.toLowerCase()));
 }
 
 function toHashtag(value: string) {
@@ -431,74 +509,82 @@ function toHashtag(value: string) {
   return compact ? `#${compact}` : "#EditorialIllustration";
 }
 
-function includesAny(text: string, keywords: string[]) {
-  return keywords.some((keyword) => text.includes(keyword));
+function extractHeadlineSubject(headline: string) {
+  const stopWords = new Set([
+    "a",
+    "an",
+    "and",
+    "are",
+    "as",
+    "at",
+    "be",
+    "but",
+    "by",
+    "for",
+    "from",
+    "has",
+    "have",
+    "how",
+    "in",
+    "into",
+    "is",
+    "it",
+    "its",
+    "new",
+    "of",
+    "on",
+    "or",
+    "over",
+    "says",
+    "that",
+    "the",
+    "this",
+    "to",
+    "with",
+  ]);
+  const words = normalizeWhitespace(headline)
+    .replace(/[^a-zA-Z0-9' ]/g, " ")
+    .split(" ")
+    .map((word) => word.trim())
+    .filter((word) => word.length > 2 && !stopWords.has(word.toLowerCase()));
+  const subject = words.slice(0, 5).join(" ");
+
+  return subject || "the story in the headline";
 }
 
-function inferTopic(headline: string) {
+function inferTheme(headline: string): HeadlineTheme {
   const normalized = headline.toLowerCase();
+  const directTheme = HEADLINE_THEMES.find((theme) => includesAny(normalized, theme.keywords));
 
-  return TOPIC_PROFILES.find((profile) => includesAny(normalized, profile.keywords)) || FALLBACK_TOPIC;
+  if (directTheme) return directTheme;
+
+  const subject = extractHeadlineSubject(headline);
+
+  return {
+    ...FALLBACK_THEME,
+    sourceTopic: subject,
+    subject,
+    tension: `The story is about ${subject}, and the part that matters is the uncertainty around what it means next.`,
+  };
 }
 
 function inferStyle(style: string): StyleProfile {
   const styleKey = normalizeStyleKey(style);
 
   return STYLE_PROFILES[styleKey] || {
-    label: normalizeWhitespace(style) || "Editorial",
-    visualLanguage: "composition, symbols, and mood",
-    mood: "interpretive",
+    captionName: `${normalizeWhitespace(style) || "editorial"} style`,
     hashtag: toHashtag(style || "Editorial Illustration"),
+    defaultFit:
+      "The selected style works because it gives the headline a clearer emotional shape without overexplaining it.",
   };
 }
 
-function getPlainTopic(headline: string, topic: TopicProfile) {
-  const normalized = headline.toLowerCase();
-
-  if (includesAny(normalized, ["atlantic", "ocean", "sea", "circulation", "amoc", "cold blob"])) {
-    return "ocean systems and climate instability";
-  }
-
-  if (includesAny(normalized, ["space", "nasa", "moon", "planet", "mars", "asteroid"])) {
-    return "space science and uncertainty";
-  }
-
-  if (includesAny(normalized, ["ai", "artificial intelligence", "algorithm"])) {
-    return "AI, technology, and human judgment";
-  }
-
-  if (includesAny(normalized, ["housing", "rent", "zoning"])) {
-    return "housing pressure and city life";
-  }
-
-  if (includesAny(normalized, ["inflation", "rates", "fed", "market", "stocks"])) {
-    return "markets, inflation, and public confidence";
-  }
-
-  return topic.plainTopic;
+function getStyleFit(theme: HeadlineTheme, style: StyleProfile) {
+  return style.themeFits?.[theme.id] || style.defaultFit;
 }
 
-function getSpecialHashtags(headline: string) {
-  const normalized = headline.toLowerCase();
-  const tags: string[] = [];
-
-  if (includesAny(normalized, ["atlantic", "ocean", "sea", "circulation", "amoc", "cold blob"])) {
-    tags.push("#OceanScience");
-  }
-  if (includesAny(normalized, ["space", "nasa", "moon", "planet", "mars", "asteroid"])) {
-    tags.push("#SpaceScience");
-  }
-  if (includesAny(normalized, ["ai", "artificial intelligence", "algorithm"])) {
-    tags.push("#AI");
-  }
-  if (includesAny(normalized, ["housing", "rent", "zoning", "transit", "subway"])) {
-    tags.push("#Urbanism");
-  }
-  if (includesAny(normalized, ["election", "vote", "campaign"])) {
-    tags.push("#ElectionArt");
-  }
-
-  return tags;
+function getSuggestedFirstComment(theme: HeadlineTheme, style: StyleProfile) {
+  return style.themeComments?.[theme.id] || theme.comments[0];
 }
 
 function uniqueHashtags(candidates: string[]) {
@@ -509,7 +595,7 @@ function uniqueHashtags(candidates: string[]) {
     const normalized = candidate.startsWith("#") ? candidate : `#${candidate}`;
     const key = normalized.toLowerCase();
 
-    if (!seen.has(key)) {
+    if (!GENERIC_HASHTAGS.has(normalized) && !seen.has(key)) {
       seen.add(key);
       tags.push(normalized);
     }
@@ -518,85 +604,38 @@ function uniqueHashtags(candidates: string[]) {
   return tags;
 }
 
-function buildHashtags(headline: string, topic: TopicProfile, style: StyleProfile) {
-  const specificCandidates = uniqueHashtags([
-    ...topic.hashtags,
-    ...getSpecialHashtags(headline),
+function buildHashtags(theme: HeadlineTheme, style: StyleProfile) {
+  return uniqueHashtags([
+    ...theme.hashtags,
     style.hashtag,
-    ...topic.audienceTags,
-    "#VisualJournalism",
     "#EditorialIllustration",
-  ]).filter((tag) => !GENERIC_HASHTAGS.has(tag));
-
-  if (specificCandidates.length >= 3) {
-    return specificCandidates.slice(0, 7);
-  }
-
-  return uniqueHashtags([...specificCandidates, "#NewsVisuals", "#AIArt"]).slice(0, 7);
+    "#VisualJournalism",
+  ]).slice(0, 7);
 }
 
-function buildCaption(
-  variant: CaptionVariant,
-  plainTopic: string,
-  topic: TopicProfile,
-  style: StyleProfile
-) {
-  if (variant === "editorial") {
-    return [
-      `The headline lands as ${topic.reaction}.`,
-      `The ${style.label} language turns ${topic.subject} into ${style.visualLanguage}, making the story feel like ${topic.tension}.`,
-      `Based on a recent headline about ${plainTopic}. Made with HeadlineHarmonies.`,
-    ].join(" ");
-  }
-
-  if (variant === "minimal") {
-    return [
-      `This one felt like ${topic.shortLabel} under pressure.`,
-      `${style.visualLanguage} felt like the right way to hold the mood without overexplaining it.`,
-      `Based on a recent headline about ${plainTopic}. Made with HeadlineHarmonies.`,
-    ].join(" ");
-  }
-
-  return [
-    `This headline felt less like a straight news item and more like ${topic.reaction}.`,
-    `I pictured ${topic.subject} through ${style.visualLanguage}, with the image leaning into ${style.mood} tension instead of a literal explanation.`,
-    `Based on a recent headline about ${plainTopic}. Made with HeadlineHarmonies.`,
-  ].join(" ");
+function buildCaption(theme: HeadlineTheme, style: StyleProfile) {
+  return `${theme.tension} ${getStyleFit(theme, style)} Made with HeadlineHarmonies.`;
 }
 
-function buildAltText(headline: string, plainTopic: string, style: StyleProfile) {
+function buildAltText(headline: string, theme: HeadlineTheme, style: StyleProfile) {
   const cleanHeadline = normalizeWhitespace(headline);
 
-  return `Generated ${style.label} artwork inspired by a recent headline about ${plainTopic}. Source headline: ${cleanHeadline}.`;
-}
-
-function buildSuggestedFirstComment(variant: CaptionVariant, topic: TopicProfile) {
-  if (variant === "editorial") {
-    return "The metaphor felt clearer once the image stopped trying to explain the headline directly.";
-  }
-
-  if (variant === "minimal") {
-    return "I kept this one quieter because the headline already had enough noise.";
-  }
-
-  return `I was trying to make ${topic.shortLabel} feel less abstract here.`;
+  return `Generated ${style.captionName} artwork inspired by a recent headline about ${theme.sourceTopic}. Source headline: ${cleanHeadline}.`;
 }
 
 export function buildCaptionPackage({
   headline,
   style,
-  variant = "personal",
 }: CaptionPackageInput): CaptionPackage {
   const cleanHeadline = normalizeWhitespace(headline);
-  const topic = inferTopic(cleanHeadline);
+  const theme = inferTheme(cleanHeadline);
   const styleProfile = inferStyle(style);
-  const plainTopic = getPlainTopic(cleanHeadline, topic);
 
   return {
-    caption: buildCaption(variant, plainTopic, topic, styleProfile),
-    hashtags: buildHashtags(cleanHeadline, topic, styleProfile),
-    altText: buildAltText(cleanHeadline, plainTopic, styleProfile),
-    suggestedFirstComment: buildSuggestedFirstComment(variant, topic),
+    caption: buildCaption(theme, styleProfile),
+    hashtags: buildHashtags(theme, styleProfile),
+    altText: buildAltText(cleanHeadline, theme, styleProfile),
+    suggestedFirstComment: getSuggestedFirstComment(theme, styleProfile),
   };
 }
 

@@ -29,17 +29,17 @@ The project originally included NFT minting; the active UI has been migrated to 
 
 4. Image generation:
    - Frontend posts `{ selectedStyle, selectedHeadline }` to `POST /api/generateImage`.
-   - Backend does two AI steps:
-     - OpenAI (`gpt-4o-mini`) scores the headline on 4 attributes (`globalImpact`, `longevity`, `culturalSignificance`, `mediaCoverage`).
-     - OpenAI Images (`gpt-image-2` by default) generates the image from a randomized style/headline prompt template.
+   - Backend calls OpenAI Images (`gpt-image-2` by default) to generate the image from a randomized style/headline prompt template.
+   - Backend then tries a cheap vision-capable caption model to create the caption package from the generated image, headline, style, and image prompt.
+   - If no caption API key/model is available or the model output fails validation, backend falls back to the deterministic local caption package.
    - Backend returns:
-     - `image` (base64 PNG)
-     - `scores`
-     - `price` (legacy computed average score; currently informational only)
+     - `image` (base64 image data)
+     - `imageMimeType`
+     - `captionPackage` (`caption`, `hashtags`, `altText`, `suggestedFirstComment`)
 
 5. Client post-prep:
    - Frontend converts base64 image into a `File`.
-   - Auto-generates a caption from selected headline/style.
+   - Uses the server caption package when present, with deterministic local caption generation as a browser-side safety fallback.
 
 6. Share action:
    - If `navigator.share` supports files, app opens the native share sheet with image + caption.
@@ -76,8 +76,9 @@ The project originally included NFT minting; the active UI has been migrated to 
 
 ### AI and external services
 
-- OpenAI Node SDK (`openai`) for headline scoring
+- OpenAI Node SDK (`openai`) for image generation
 - OpenAI Images API (`gpt-image-2` by default) for image generation
+- OpenAI chat/vision model for server-side caption packages, defaulting through the small-model candidate list in `src/lib/visionCaptionPackage.ts`
 - Google News RSS feed for headline source data
 
 ### Browser APIs used by the share workflow
@@ -104,7 +105,11 @@ These packages and route are still present, but not used by the active UI flow:
 - `src/pages/api/getNews.ts`
   - Google News RSS fetch + parse.
 - `src/pages/api/generateImage.ts`
-  - OpenAI scoring + OpenAI image generation.
+  - OpenAI image generation and server-side caption package generation.
+- `src/lib/captionPackage.ts`
+  - Deterministic local caption-package fallback.
+- `src/lib/visionCaptionPackage.ts`
+  - Server-only vision-informed caption-package generation, validation, caching, and deterministic fallback.
 - `src/pages/api/mintHH.ts`
   - Legacy NFT minting backend path (not called by current UI).
 
@@ -113,11 +118,14 @@ These packages and route are still present, but not used by the active UI flow:
 Defined in local `.env`:
 
 - `OPENAI_API_KEY`
-  - Required for headline scoring in `/api/generateImage`; also used for image generation when `OPENAI_IMAGE_API_KEY` is not set.
+  - Used for image generation when `OPENAI_IMAGE_API_KEY` is not set.
+  - Also used server-side for the optional vision-informed caption package. If absent, caption generation falls back to deterministic local logic.
 - `OPENAI_IMAGE_API_KEY`
   - Optional dedicated key for OpenAI image generation.
 - `OPENAI_IMAGE_MODEL`
   - Optional image model override. Defaults to `gpt-image-2`.
+- `OPENAI_CAPTION_MODEL`
+  - Optional caption model override. If unset, the server tries `gpt-5-nano`, then `gpt-4.1-nano`, then `gpt-4.1-mini`, and falls back deterministically if none succeed.
 - `OPENAI_IMAGE_SIZE`
   - Optional image size override. Defaults to `1024x1024`.
 - `OPENAI_IMAGE_QUALITY`
@@ -154,7 +162,7 @@ npm run build
   - Returns `{ headlines: string[] }`.
 - `POST /api/generateImage`
   - Input: `{ selectedStyle, selectedHeadline }`
-  - Output: `{ image, scores, price }`
+  - Output: `{ image, imageMimeType, captionPackage }`
 - `POST /api/mintHH` (legacy)
   - Legacy NFT minting flow; not part of active UI.
 - `GET /api/hello`
